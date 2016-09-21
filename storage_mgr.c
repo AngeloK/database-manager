@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include <unistd.h> // for close
+#include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
 
@@ -72,7 +72,7 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 
 RC closePageFile (SM_FileHandle *fHandle) {
 	int fd = fHandle->mgmtInfo;
-	if (close(fd)) {
+	if (!close(fd)) {
 		return RC_OK;
 	}
 	return RC_FILE_NOT_FOUND;
@@ -96,7 +96,6 @@ RC readBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
 
 	// http://pubs.opengroup.org/onlinepubs/009695399/functions/read.html
 	if (pread(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) > 0 ) {
-		printf("%s\n", memPage);
 		return RC_OK;
 	}
 	else {
@@ -110,7 +109,8 @@ int getBlockPos (SM_FileHandle *fHandle) {
 }
 
 RC readFirstBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
-	if (read(fHandle->mgmtInfo, memPage, PAGE_SIZE) > 0) {
+
+	if (pread(fHandle->mgmtInfo, memPage, PAGE_SIZE, 0) > 0) {
 		return RC_OK;
 	}
 	else {
@@ -168,9 +168,7 @@ RC writeBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
 
 	off_t offset = pageNum * PAGE_SIZE;
 
-	// http://pubs.opengroup.org/onlinepubs/009695399/functions/read.html
 	if (pwrite(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) > 0 ) {
-		printf("%s\n", memPage);
 		return RC_OK;
 	}
 	return RC_WRITE_FAILED;
@@ -210,25 +208,4 @@ RC ensureCapacity (int numberOfPages, SM_FileHandle *fHandle) {
 		return RC_OK;
 	}
 	return RC_OK;
-}
-
-int main(int argc, char *argv[]){
-
-	initStorageManager();
-
-	/*int c = createPageFile("helloworld.txt");*/
-	openPageFile("helloworld.txt", fHandle);
-
-	/*printf("%d\n", fHandle->curPagePos);*/
-	/*printf("%d\n", fHandle->totalNumPages);*/
-	/*printf("%p\n", fHandle->mgmtInfo);*/
-
-	/*readBlock(0, fHandle, memPage);*/
-	appendEmptyBlock(fHandle);
-
-	int i = closePageFile(fHandle);
-	/*printf("%d\n", i);*/
-
-	/*destroyPageFile("helloworld.txt");*/
-	return 0;
 }

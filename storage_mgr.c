@@ -20,25 +20,35 @@ void initStorageManager (void) {
 
 };
 RC createPageFile (char *fileName) {
-	FILE *fp;
 
-	fp = fopen(fileName, "w");
+	int mode = S_IRUSR | S_IWUSR;
 
-	if (fp == NULL) {
+
+	int fd = creat(fileName, mode);
+
+	if (fd < 0) {
+		printf("file not found.\n");
 		return RC_FILE_NOT_FOUND;
 	}
 
 	char data[PAGE_SIZE];
 
 	memset(data,'\0',sizeof(data));
-	fwrite(data, PAGE_SIZE, 1, fp);
-	
-	fclose(fp);
+
+	if (write(fd, data, PAGE_SIZE) != PAGE_SIZE) {
+		printf("Error writing to file %s\n", fileName);
+		return RC_WRITE_FAILED;
+	};
+	close(fd);
 	return RC_OK;
+
 };
 
 RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
-	int fd = open(fileName, O_RDONLY);
+
+	int flag = O_RDONLY;
+	int fd = open(fileName, flag);
+
 	if (fcntl(fd, F_GETFL) < 0 && errno == EBADF) {
 		return RC_FILE_NOT_FOUND;
 	}
@@ -71,12 +81,36 @@ RC destroyPageFile (char *fileName) {
 	return RC_FILE_NOT_FOUND;
 }
 
+/* reading blocks from disc */
+RC readBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
+	if (pageNum < fHandle->totalNumPages) {
+		return RC_READ_NON_EXISTING_PAGE;
+	}	
+
+	
+
+
+}
+int getBlockPos (SM_FileHandle *fHandle);
+RC readFirstBlock (SM_FileHandle *fHandle, SM_PageHandle memPage);
+RC readPreviousBlock (SM_FileHandle *fHandle, SM_PageHandle memPage);
+RC readCurrentBlock (SM_FileHandle *fHandle, SM_PageHandle memPage);
+RC readNextBlock (SM_FileHandle *fHandle, SM_PageHandle memPage);
+RC readLastBlock (SM_FileHandle *fHandle, SM_PageHandle memPage);
+
+/* writing blocks to a page file */
+RC writeBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage);
+RC writeCurrentBlock (SM_FileHandle *fHandle, SM_PageHandle memPage);
+RC appendEmptyBlock (SM_FileHandle *fHandle);
+RC ensureCapacity (int numberOfPages, SM_FileHandle *fHandle);
+
+
+
 
 int main(int argc, char *argv[]){
-	SM_FileHandle *fHandle;
-	initStorageManager();
+	SM_FileHandle *fHandle = (SM_FileHandle *) malloc(sizeof(SM_FileHandle *));
 		
-	createPageFile("helloworld.txt");
+	int c = createPageFile("helloworld.txt");
 	openPageFile("helloworld.txt", fHandle);
 
 	printf("%d\n", fHandle->curPagePos);
@@ -86,6 +120,6 @@ int main(int argc, char *argv[]){
 	int i = closePageFile(fHandle);
 	printf("%d\n", i);
 
-	destroyPageFile("helloworld.txt");
+	/*destroyPageFile("helloworld.txt");*/
 	return 0;
 }

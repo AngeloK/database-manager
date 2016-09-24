@@ -6,13 +6,13 @@ The goal of this assignment is to implement a simple storage manager - a module 
 Group Members:
 --------------
 
-1) Dalin Yang - 
+1) Dalin Yang - dyang10@hawk.iit.edu - A20358102
 
 2) Nikhil Birur Lakshminarayana - nlakshm3@hawk.iit.edu - A20357121  
 
 3) Utkarsh Khanna 
 
-4) Yongjie Kang
+4) Yongjie Kang - ykang15@hawk.iit.edu - A20349674
 
 Description of the Methods used and their implementation:
 ---------------------------------------------------------
@@ -25,7 +25,6 @@ Create a new page file fileName. The initial file size should be one page. This 
 	a) Generate File Descriptor
 	b) Create a single page with '\0' bytes.
 	c) Write the single page to page file.
-	d) Close file descriptor.
 
 Return Value : RC_FILE_NOT_FOUND, if file is not found ; RC_WRITE_FAILED, if writing to   File fails, else RC_OK
 *******************************************************************************************

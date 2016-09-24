@@ -25,6 +25,7 @@ Create a new page file fileName. The initial file size should be one page. This 
 	a) Generate File Descriptor
 	b) Create a single page with '\0' bytes.
 	c) Write the single page to page file.
+	d) Close file descriptor.
 
 Return Value : RC_FILE_NOT_FOUND, if file is not found ; RC_WRITE_FAILED, if writing to   File fails, else RC_OK
 *******************************************************************************************
@@ -35,7 +36,6 @@ Opens an existing page file. Should return RC_FILE_NOT_FOUND if the file does no
 	a) Check if File exists.
 	b) assign current file descriptor to page file handle.
 	c) Get fileName, totalNumPages, and initialize current page
-	d) Close file descriptor.
 
 Return Value : RC_FILE_NOT_FOUND, if file is not found else RC_OK
 

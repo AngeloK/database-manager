@@ -1,5 +1,5 @@
 objects = storage_mgr.c dberror.c test_assign1_2.c 
-exe_obj = test_assign
+exe_obj = test_assign_2
 
 test : $(objects) 
 	gcc -o $(exe_obj) $(objects) 

@@ -79,7 +79,6 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 
 	// flag defines file access mode.
 	// O_RDWR read and write mode.
-	// O_APPEND append mode, used for appending new block to page file.
 	int flag = O_RDWR;
 	int fd = open(fileName, flag);
 

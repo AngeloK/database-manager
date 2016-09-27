@@ -151,11 +151,10 @@ How to run Storage Manager (Test Case 1):
 
 1) Navigate to the terminal where the Storage Manager root folder is stored.
 
-2) Type : make -f MakeFile_1
+2) Type : make -f Makefile
 
 3) Press Return/Enter
 
-3) Type ./storage_Manager_TC1
 
 
 How to run Storage Manager (Test Case 2):
@@ -163,9 +162,8 @@ How to run Storage Manager (Test Case 2):
 
 1) Navigate to the terminal where the Storage Manager root folder is stored.
 
-2) Type : make -f MakeFile_2
+2) Type : make -f Makefile_2
 
 3) Press Return/Enter
 
-3) Type ./storage_Manager_TC2
 

@@ -93,15 +93,20 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 	fHandle->mgmtInfo = (void *)fd;
 
 	// obtain file size via file descriptor.
-	struct stat sat;
-	fstat(fd, &sat);
-	int size = sat.st_size;
+	off_t fsize;
+	fsize = lseek(fd, 0, SEEK_END);
+
+	printf("size is :%llu\n", fsize);
+
 	
 	// assign values to fileName, totalNumPages, and initialize current page 
 	// position as 0.
 	fHandle->fileName = fileName;
-	fHandle->totalNumPages = size/PAGE_SIZE;
+	fHandle->totalNumPages = fsize/PAGE_SIZE;
 	fHandle->curPagePos = 0;
+
+
+	printf("%d\n", fHandle->totalNumPages);
 
 	return RC_OK;
 }
@@ -343,11 +348,14 @@ RC appendEmptyBlock (SM_FileHandle *fHandle) {
 	memset(data,'\0',sizeof(data));
 	
 	int fd = fHandle->mgmtInfo;
+	off_t offset = (fHandle->totalNumPages) * PAGE_SIZE;
 
-	if(write(fd, memPage, PAGE_SIZE) < 0) {
+	if(pwrite(fd, memPage, PAGE_SIZE, offset) < 0) {
 		return RC_WRITE_FAILED;
 	}
 	else {
+		fHandle->totalNumPages += 1;
+		fHandle->curPagePos += 1;
 		return RC_OK;
 	}
 }

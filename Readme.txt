@@ -6,11 +6,12 @@ The goal of this assignment is to implement a simple storage manager - a module 
 Group Members:
 --------------
 
-1) Dalin Yang - dyang10@hawk.iit.edu - A20358102
+
+1) Dalin Yang (Team Leader) - dyang10@hawk.iit.edu - A20358102
 
 2) Nikhil Birur Lakshminarayana - nlakshm3@hawk.iit.edu - A20357121  
 
-3) Utkarsh Khanna 
+3) Utkarsh Khanna ukhanna1@hawk.iit.edu - A20349724
 
 4) Yongjie Kang - ykang15@hawk.iit.edu - A20349674
 
@@ -134,36 +135,25 @@ Return Value : RC_READ_NON_EXISTING_PAGE, if file has less than pageNum pages, R
 14) appendEmptyBlock()
 
 Increase the number of pages in the file by one. The new last page is filled with zero bytes.
+Current position is added by 1.
 	
 Return Value : RC_WRITE_FAILED, if writing to a file failed else RC_OK
 *******************************************************************************************
 15) ensureCapacity() 
 
 If the file has less than numberOfPages pages then the method increases the size to numberOfPages.
+This function will also update the total number of pages and current page position.
  
 Return Value : RC_OK
 *******************************************************************************************
 
 
 
-How to run Storage Manager (Test Case 1):
+How to run Storage Manager (Test Case 1 and extra test case):
 ------------------------------------------
 
 1) Navigate to the terminal where the Storage Manager root folder is stored.
 
-2) Type : make -f Makefile
+2) Type : make
 
 3) Press Return/Enter
-
-
-
-How to run Storage Manager (Test Case 2):
-------------------------------------------
-
-1) Navigate to the terminal where the Storage Manager root folder is stored.
-
-2) Type : make -f Makefile_2
-
-3) Press Return/Enter
-
-

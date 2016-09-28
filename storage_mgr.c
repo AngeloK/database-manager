@@ -310,7 +310,6 @@ RC writeBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
 	off_t offset = pageNum * PAGE_SIZE;
 
 	if (pwrite(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) > 0 ) {
-		fHandle->curPagePos += 1;
 		return RC_OK;
 	}
 	return RC_WRITE_FAILED;
@@ -356,6 +355,7 @@ RC appendEmptyBlock (SM_FileHandle *fHandle) {
 	}
 	else {
 		fHandle->totalNumPages += 1;
+		fHandle->curPagePos += 1;
 		return RC_OK;
 	}
 }

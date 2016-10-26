@@ -17,7 +17,7 @@ typedef struct FQ_Node {
 	BM_PageFrame *pf;
 	FQ_Node *next;
 	FQ_Node *previous;
-}
+} FQ_Node;
 
 typedef struct BM_FrameQueue {
 	FQ_Node *head;

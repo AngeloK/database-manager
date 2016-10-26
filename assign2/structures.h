@@ -26,7 +26,7 @@ typedef struct BM_FrameQueue {
 } BM_FrameQueue;
 
 typedef struct BufferStorage {
-	Queue *queue;
+	BM_FrameQueue *queue;
 	int array[];
 } BufferStorage;
 

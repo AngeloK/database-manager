@@ -28,6 +28,7 @@ typedef struct BM_FrameQueue {
 typedef struct BufferStorage {
 	BM_FrameQueue *queue;
 	int array[];
+	int PoolCapacity;
 } BufferStorage;
 
 

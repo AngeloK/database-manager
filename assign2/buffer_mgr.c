@@ -19,18 +19,33 @@ BM_PageHandle *h;
 // Buffer Manager Interface Pool Handling
 RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, const int numPages, ReplacementStrategy strategy, 
 		  void *stratData) {
+		
+		bm->pageFile = pageFileName;
+		bm->numPages = numPages;
+		bm->strategy = strategy;
+		
+		// the data structure of storage.
 		return RC_OK;
 };
 
 
-// RC shutdownBufferPool(BM_BufferPool *const bm) {
-// 	
-// 	
-// }
-// RC forceFlushPool(BM_BufferPool *const bm) {
-// 	
-// }
-// 
+RC shutdownBufferPool(BM_BufferPool *const bm) {
+	// if there a a pinned page. throw a error
+	
+	// if there are dirty files, update the changes on disk.
+	//forceFlushPool(bm);
+	// else
+	
+	// free all variable (or structure).
+	return RC_OK;
+		
+}
+RC forceFlushPool(BM_BufferPool *const bm) {
+	
+	// check dirty bits.
+	
+}
+
 // // Buffer Manager Interface Access Pages
 // RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page) {
 // 	

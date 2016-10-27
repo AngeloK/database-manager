@@ -62,7 +62,9 @@ RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	int i;
 	for (i = 0; i < bm_size; i++) {
 		if (bs->pool[i].pageNum == page->pageNum) {
-			bs->pool[i].fix_count--;
+			if(bs->pool[i].fix_count>0){
+				bs->pool[i].fix_count--;
+			}
 			break;
 		}
 	}

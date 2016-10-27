@@ -30,10 +30,16 @@ int main(int argc, char const *argv[]) {
 	// }
 	// 
 	BM_BufferPool *bm = MAKE_POOL();
-	// Buffer_Storage *bs = initBufferStorage(5);
 	initBufferPool(bm, "testbuffer.bin", 3, RS_FIFO, NULL);
 	// 
-	printf("hello world\n");
+  BM_PageHandle *h = MAKE_PAGE_HANDLE();
+	// printf("%d\n", h->pageNum);
+	pinPage(bm, h, 1);
+	sprintf(h->data, "%s-%i", "Page", h->pageNum);
+	
+	printf("%s\n", h->data);
+	
+	// CHECK(markDirty(bm, h));
 	shutdownBufferPool(bm);
 	// getFrameContents(bm);
 	

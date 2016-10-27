@@ -34,6 +34,7 @@ typedef struct Buffer_Storage {
 
 Buffer_Storage *initBufferStorage(int size);
 void destroyBufferStorage(Buffer_Storage *bs);
-void updatePageFrame(Page_Frame *pf, BM_PageHandle *const page);
+void replacePageFrame(ReplacementStrategy strategy, Buffer_Storage *bs, BM_PageHandle *page, PageNumber pageNum, int index);
+void printPool(Buffer_Storage *bs);
 
 #endif

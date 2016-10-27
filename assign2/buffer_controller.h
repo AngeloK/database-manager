@@ -11,15 +11,14 @@ typedef long int Timestamp;
 typedef struct Page_Frame {
   int fix_count; // total number of times the page is pinned.
   bool is_dirty; // the page is dirty of not.
-  int pageNum;   //  page number of the page in page file.
-  Timestamp last_access; // the last access timestamp.
-  int clock_bit; // clock bit is used for clock replacement strategy.
-  char *data;    // the pointer to the page content stored in memeory.
+  // int clock_bit; // clock bit is used for clock replacement strategy.
+  BM_PageHandle *pageHandle;
+  int index;
 } Page_Frame, Pool;
 
 
 // data structure used for storing page frames.
-typedef struct Buffer_Storage {
+  typedef struct Buffer_Storage {
   int size;  // size of buffer pool.
   int count; // the number of page frames which are occupied.
   int curPos;     // current position, it's used for FIFO.
@@ -34,7 +33,7 @@ typedef struct Buffer_Storage {
 
 Buffer_Storage *initBufferStorage(int size);
 void destroyBufferStorage(Buffer_Storage *bs);
-void replacePageFrame(ReplacementStrategy strategy, Buffer_Storage *bs, BM_PageHandle *page, PageNumber pageNum, int index);
+RC replacePageFrame(ReplacementStrategy strategy, BM_BufferPool *bm, BM_PageHandle *pagehandle);
 void printPool(Buffer_Storage *bs);
 
 #endif

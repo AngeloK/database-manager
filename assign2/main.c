@@ -29,18 +29,14 @@ int main(int argc, char const *argv[]) {
 	// 	printf("yeah\n");
 	// }
 	// 
-	BM_BufferPool *bm = MAKE_POOL();
-	initBufferPool(bm, "testbuffer.bin", 3, RS_FIFO, NULL);
-	// 
-  BM_PageHandle *h = MAKE_PAGE_HANDLE();
-	// printf("%d\n", h->pageNum);
-	pinPage(bm, h, 1);
-	sprintf(h->data, "%s-%i", "Page", h->pageNum);
-	
-	printf("%s\n", h->data);
-	
-	// CHECK(markDirty(bm, h));
-	shutdownBufferPool(bm);
+	// initStorageManager();
+	// char *testName = "";
+	// BM_BufferPool *bm = MAKE_POOL();
+  // testName = "Creating and Reading Back Dummy Pages";
+  // CHECK(createPageFile("testbuffer.bin"));
+  // createDummyPages(bm, 22);
+  // checkDummyPages(bm, 20);
+	// shutdownBufferPool(bm);
 	// getFrameContents(bm);
 	
 	// BM_BufferPool *bm = MAKE_POOL();

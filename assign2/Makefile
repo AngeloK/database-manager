@@ -1,4 +1,4 @@
-objects = buffer_mgr.c storage_mgr.c dberror.c
+objects = buffer_mgr.c storage_mgr.c dberror.c buffer_controller.c
 exe_obj = main.c
 # test_1_obj = test_assign1_1.c
 # test_2_obj = test_assign1_2.c

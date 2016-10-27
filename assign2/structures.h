@@ -15,13 +15,13 @@ typedef struct BM_PageFrames {
 
 typedef struct FQ_Node {
 	BM_PageFrame *pf;
-	FQ_Node *next;
-	FQ_Node *previous;
+	struct FQ_Node *next;
+	struct FQ_Node *previous;
 } FQ_Node;
 
 typedef struct BM_FrameQueue {
-	FQ_Node *head;
-	FQ_Node *tail;
+	struct FQ_Node *head;
+	struct FQ_Node *tail;
 	int frameCount;
 } BM_FrameQueue;
 

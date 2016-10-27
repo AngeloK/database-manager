@@ -5,10 +5,12 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 
 #include "buffer_mgr.h"
 #include "dberror.h"
 #include "test_helper.h"
+#include "buffer_controller.h"
 
 BM_BufferPool *bm;
 BM_PageHandle *h;
@@ -20,11 +22,11 @@ BM_PageHandle *h;
 RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, const int numPages, ReplacementStrategy strategy, 
 		  void *stratData) {
 		
-		bm->pageFile = pageFileName;
+		bm->pageFile = (char *)pageFileName;
 		bm->numPages = numPages;
 		bm->strategy = strategy;
+		// bm->mgmtData = (Buffer_Storage *)initBufferStorage(numPages);
 		
-		// the data structure of storage.
 		return RC_OK;
 };
 
@@ -37,22 +39,40 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 	// else
 	
 	// free all variable (or structure).
+	destroyBufferStorage(bm->mgmtData);
 	return RC_OK;
 		
-}
+};
 RC forceFlushPool(BM_BufferPool *const bm) {
 	
 	// check dirty bits.
-	
-}
+	return RC_OK;
+};
 
 // // Buffer Manager Interface Access Pages
 // RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page) {
-// 	
-// 	
+// 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+// 	int bm_size = bm->numPages;
+// 	int i;
+// 	for (i = 0; i < bm_size; i++) {
+// 		if (bs->pool[i].pageNum == page->pageNum) {
+// 			bs->pool[i].is_dirty = true;
+// 			break;
+// 		}
+// 	}
+// 	return RC_OK;
 // }
 // RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
-// 	
+// 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+// 	int bm_size = bm->numPages;	
+// 	int i;
+// 	for (i = 0; i < bm_size; i++) {
+// 		if (bs->pool[i].pageNum == page->pageNum) {
+// 			bs->pool[i].fix_count--;
+// 			break;
+// 		}
+// 	}
+// 	return RC_OK;
 // }
 // RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page) {
 // 	
@@ -60,12 +80,94 @@ RC forceFlushPool(BM_BufferPool *const bm) {
 // }
 // RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page, 
 // 	    const PageNumber pageNum) {
-// 			
-// }
+// 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+//  	int bm_size = bm->numPages;	
+// 	int i;
+// 	for (i = 0; i < bm_size; i++) {
+// 		if (bs->pool[i].pageNum == page->pageNum) {
+// 			bs->pool[i].fix_count++;
+// 			page->data = bs->pool[i].data;
+// 			page->pageNum = bs->pool[i].pageNum;
+// 			return RC_OK;
+// 		}
+// 	}
+// 	// page not found, replacement strategy is being used.
+// 	if (isBufferStorageFull(bs)) {
+// 			updatePageFrame(&(bs->pool[bs->curPos]), page);
+// 			bs->curPos++;
+// 			if (bs->curPos > bs->size) {
+// 				// roll back position pointer.
+// 				bs->curPos = 0;
+// 			}
+// 			return RC_OK;
+// 	}
+// 	else {
+// 		for (i = 0; i < bm_size; i++) {
+// 			// if (bs->pool[i].data == "\0") {
+// 			if (true) {
+// 			// if (strcmp(bs->pool[i].data, "")) {
+// 				updatePageFrame(&(bs->pool[i]), page);
+// 				return RC_OK;
+// 			}
+// 		}	
+// 	}
+// 	return -1;
+// };
 // 
 // // Statistics Interface
-// PageNumber *getFrameContents (BM_BufferPool *const bm);
-// bool *getDirtyFlags (BM_BufferPool *const bm);
-// int *getFixCounts (BM_BufferPool *const bm);
-// int getNumReadIO (BM_BufferPool *const bm);
-// int getNumWriteIO (BM_BufferPool *const bm);
+// PageNumber *getFrameContents (BM_BufferPool *const bm) {
+// 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+// 	int bm_size = bm->numPages;
+// 	int *contents = (int *)malloc(sizeof(int) * bm_size);
+// 	
+// 	int i;
+// 	for (i = 0; i < bm_size; i++) {
+// 		contents[i] = bs->pool[i].pageNum;
+// 	}
+// 	return contents;
+// }
+// bool *getDirtyFlags (BM_BufferPool *const bm) {
+// 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+// 	int bm_size = bm->numPages;
+// 	bool *flags = (bool *)malloc(sizeof(bool) * bm_size);
+// 	
+// 	int i;
+// 	for (i = 0; i < bm_size; i++) {
+// 		flags[i] = bs->pool[i].is_dirty;
+// 	}
+// 	return flags;	
+// }
+// int *getFixCounts (BM_BufferPool *const bm) {
+// 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+// 	int bm_size = bm->numPages;
+// 	int *fix_counts = (int *)malloc(sizeof(int) * bm_size);
+// 	
+// 	int i;
+// 	for (i = 0; i < bm_size; i++) {
+// 		fix_counts[i] = bs->pool[i].fix_count;
+// 	}
+// 	return fix_counts;	
+// }
+// int getNumReadIO (BM_BufferPool *const bm){
+// 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+// 	int bm_size = bm->numPages;
+// 	int *numReadIO = (int *)malloc(sizeof(int) * bm_size);
+// 
+// 	int i;
+// 	for (i = 0; i < bm_size; i++) {
+// 		numReadIO[i] = bs->pool[i].numReadIO;
+// 	}
+// 	return numReadIO;	
+// }
+// 
+// int getNumWriteIO (BM_BufferPool *const bm) {
+// 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+// 	int bm_size = bm->numPages;
+// 	int *numWriteIO = (int *)malloc(sizeof(int) * bm_size);
+// 
+// 	int i;
+// 	for (i = 0; i < bm_size; i++) {
+// 		numWriteIO[i] = bs->pool[i].numWriteIO;
+// 	}
+// 	return numWriteIO;	
+// }

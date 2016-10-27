@@ -5,35 +5,49 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #include "buffer_mgr.h"
 #include "dberror.h"
 #include "storage_mgr.h"
+#include "buffer_controller.h"
 
-char *testName = "test.bin";
+// #include "structures.h"
+
 
 int main(int argc, char const *argv[]) {
 	
+	// time_t t0 = time(0);
+	// printf("%ld\n", t0);
+	
+	// int *a = (int *)malloc(sizeof(int) * 3);
+	// 
+	// a[0] = 1;
+	// 
+	// printf("%d\n", a[0]);
+	// if (strcmp(testName, "")) {
+	// 	printf("yeah\n");
+	// }
+	// 
 	BM_BufferPool *bm = MAKE_POOL();
-	BM_PageHandle *h = MAKE_PAGE_HANDLE();
+	// Buffer_Storage *bs = initBufferStorage(5);
+	initBufferPool(bm, "testbuffer.bin", 3, RS_FIFO, NULL);
+	// 
+	printf("hello world\n");
+	shutdownBufferPool(bm);
+	// getFrameContents(bm);
 	
-	initStorageManager();
-	createPageFile(testName);
-	
-	int i;
-
-	initBufferPool(bm, "test.bin", 3, RS_FIFO, NULL);
-	
-	for (i = 0; i < num; i++)
-		{
-			CHECK(pinPage(bm, h, i));
-			sprintf(h->data, "%s-%i", "Page", h->pageNum);
-			CHECK(markDirty(bm, h));
-			CHECK(unpinPage(bm,h));
-		}
-
-	CHECK(shutdownBufferPool(bm));
-
-	free(h);
+	// BM_BufferPool *bm = MAKE_POOL();
+	// BM_PageHandle *h = MAKE_PAGE_HANDLE();
+	// 
+	// 
+	// // BM_PageFrames *bfp = BM_PageFrames;
+	// 
+	// char *numstring = (char*) malloc(80);
+	// initStorageManager();
+	// createPageFile(testName);
+	// 
+	// 
+	// free(h);
 	return 0;
 }

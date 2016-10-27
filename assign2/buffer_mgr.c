@@ -59,14 +59,6 @@ RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page) {
 }
 RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
-	// int bm_size = bm->numPages;	
-	// int i;
-	// for (i = 0; i < bm_size; i++) {
-	// 	if (bs->pool[i].pageNum == page->pageNum) {
-	// 		bs->pool[i].fix_count--;
-	// 		break;
-	// 	}
-	// }
 	return RC_OK;
 }
 RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page) {
@@ -146,7 +138,7 @@ int *getFixCounts (BM_BufferPool *const bm) {
 	}
 	return fix_counts;	
 }
-// int getNumReadIO (BM_BufferPool *const bm){
+int getNumReadIO (BM_BufferPool *const bm){
 // 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 // 	int bm_size = bm->numPages;
 // 	int *numReadIO = (int *)malloc(sizeof(int) * bm_size);
@@ -155,10 +147,15 @@ int *getFixCounts (BM_BufferPool *const bm) {
 // 	for (i = 0; i < bm_size; i++) {
 // 		numReadIO[i] = bs->pool[i].numReadIO;
 // 	}
-// 	return numReadIO;	
-// }
+// 	return numReadIO;
+
+
+
+	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+	return bs->numReadIO;
+}
 // 
-// int getNumWriteIO (BM_BufferPool *const bm) {
+int getNumWriteIO (BM_BufferPool *const bm) {
 // 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 // 	int bm_size = bm->numPages;
 // 	int *numWriteIO = (int *)malloc(sizeof(int) * bm_size);
@@ -167,5 +164,7 @@ int *getFixCounts (BM_BufferPool *const bm) {
 // 	for (i = 0; i < bm_size; i++) {
 // 		numWriteIO[i] = bs->pool[i].numWriteIO;
 // 	}
-// 	return numWriteIO;	
-// }
+// 	return numWriteIO;
+	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+	return bs->numWriteIO;
+}

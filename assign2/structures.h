@@ -1,3 +1,4 @@
+#include <sys/time.h>
 #include "buffer_mgr.h"
 
 /*
@@ -11,13 +12,16 @@ typedef struct BM_PageFrames {
 	BM_PageHandle *pageHandle;
 	int fixcount;
 	bool dirty;
+	time_t lastUsed;
 } BM_PageFrame;
 
-typedef struct FQ_Node {
+typedef struct FQ_Node FQ_Node;
+
+struct FQ_Node {
 	BM_PageFrame *pf;
-	struct FQ_Node *next;
-	struct FQ_Node *previous;
-} FQ_Node;
+	FQ_Node *next;
+	FQ_Node *previous;
+};
 
 typedef struct BM_FrameQueue {
 	FQ_Node *head;

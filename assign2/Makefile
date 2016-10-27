@@ -20,8 +20,8 @@ output = main
 all : run
 
 run : $(objects) $(exe_obj) 
-	gcc -o $(output) $(objects) $(exe_obj)
+	cc -o $(output) $(objects) $(exe_obj)
 	./$(output)
 
-# clean :
-# 	rm $(exe_obj) $(test_pagefile)
+clean :
+	rm -r $(output)

@@ -11,6 +11,7 @@
 #include "dberror.h"
 #include "test_helper.h"
 #include "buffer_controller.h"
+#include "storage_mgr.h"
 
 // Buffer Manager Interface Pool Handling
 RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, const int numPages, ReplacementStrategy strategy, 
@@ -46,26 +47,26 @@ RC forceFlushPool(BM_BufferPool *const bm) {
 RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page) {
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 
-	int bm_size = bm->numPages;
-	int i;
-	for (i = 0; i < bm_size; i++) {
-		if (bs->pool[i].pageNum == page->pageNum) {
-			bs->pool[i].is_dirty = true;
-			break;
-		}
-	}
+	// int bm_size = bm->numPages;
+	// int i;
+	// for (i = 0; i < bm_size; i++) {
+	// 	if (bs->pool[i].pageNum == page->pageNum) {
+	// 		bs->pool[i].is_dirty = true;
+	// 		break;
+	// 	}
+	// }
 	return RC_OK;
 }
 RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
-	int bm_size = bm->numPages;	
-	int i;
-	for (i = 0; i < bm_size; i++) {
-		if (bs->pool[i].pageNum == page->pageNum) {
-			bs->pool[i].fix_count--;
-			break;
-		}
-	}
+	// int bm_size = bm->numPages;	
+	// int i;
+	// for (i = 0; i < bm_size; i++) {
+	// 	if (bs->pool[i].pageNum == page->pageNum) {
+	// 		bs->pool[i].fix_count--;
+	// 		break;
+	// 	}
+	// }
 	return RC_OK;
 }
 RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page) {
@@ -75,33 +76,38 @@ RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page) {
 RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page, 
 	    const PageNumber pageNum) {
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
- 	int bm_size = bm->numPages;	
-	int i;
-	for (i = 0; i < bm_size; i++) {
-		if (bs->pool[i].pageNum == page->pageNum) {
-			bs->pool[i].fix_count++;
-			page->data = bs->pool[i].data;
-			page->pageNum = bs->pool[i].pageNum;
-			return RC_OK;
-		}
-	}
+ // 	int bm_size = bm->numPages;	
+	// int i;
+	// printf("pagenum in pinpage is %d\n", pageNum);
+	// printf("pointer 1\n");
+	// for (i = 0; i < bm_size; i++) {
+	// 	if (bs->pool[i].pageNum == pageNum) {
+	// 		bs->pool[i].fix_count++;
+	// 		page->data = bs->pool[i].data;
+	// 		page->pageNum = bs->pool[i].pageNum;
+	// 		return RC_OK;
+	// 	}
+	// }
 	// page not found, replacement strategy is being used.
+	printf("pointer 2\n");
+	printf("bs-size=%d, bs-count=%d\n", bs->size, bs->count);
 	if (isBufferStorageFull(bs)) {
-			replacePageFrame(bm->strategy, bs, page, pageNum, bs->curPos);
+			printf("pointer 4 if full\n");
+			replacePageFrame(bm, page, pageNum);
 			return RC_OK;
 	}
-	
 	else {
-		for (i = 0; i < bm_size; i++) {
-			// if (strcmp(bs->pool[i].data, "") == 0) {
-			if (bs->pool[i].pageNum == NO_PAGE) {
-				replacePageFrame(bm->strategy, bs, page, pageNum, i);
-				printPool(bs);
-				// printf("%d\n", page->pageNum);
-				// printf("%s\n", page->data);
-				return RC_OK;
-			}
-		}	
+		// printf("pointer 3\n");
+		// for (i = 0; i < bm_size; i++) {
+		// 	// if (strcmp(bs->pool[i].data, "") == 0) {
+		// 	if (bs->pool[i].pageNum == NO_PAGE) {
+		// 		replacePageFrame(bm, page, pageNum);
+		// 		printPool(bs);
+		// 		// printf("%d\n", page->pageNum);
+		// 		// printf("%s\n", page->data);
+		// 		return RC_OK;
+		// 	}
+		// }	
 	}
 	return -1;
 };
@@ -114,7 +120,7 @@ PageNumber *getFrameContents (BM_BufferPool *const bm) {
 	
 	int i;
 	for (i = 0; i < bm_size; i++) {
-		contents[i] = bs->pool[i].pageNum;
+		contents[i] = bs->pool[i].pageHandle->pageNum;
 	}
 	return contents;
 }

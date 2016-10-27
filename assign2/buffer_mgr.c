@@ -142,7 +142,7 @@ int *getFixCounts (BM_BufferPool *const bm) {
 	}
 	return fix_counts;	
 }
-// int getNumReadIO (BM_BufferPool *const bm){
+int getNumReadIO (BM_BufferPool *const bm){
 // 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 // 	int bm_size = bm->numPages;
 // 	int *numReadIO = (int *)malloc(sizeof(int) * bm_size);
@@ -157,9 +157,9 @@ int *getFixCounts (BM_BufferPool *const bm) {
 
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 	return bs->numReadIO;
-// }
+}
 // 
-// int getNumWriteIO (BM_BufferPool *const bm) {
+int getNumWriteIO (BM_BufferPool *const bm) {
 // 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 // 	int bm_size = bm->numPages;
 // 	int *numWriteIO = (int *)malloc(sizeof(int) * bm_size);
@@ -171,4 +171,4 @@ int *getFixCounts (BM_BufferPool *const bm) {
 // 	return numWriteIO;
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 	return bs->numWriteIO;
-// }
+}

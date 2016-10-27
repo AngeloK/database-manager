@@ -2,6 +2,7 @@
 # include <sys/time.h>
 # include "buffer_mgr.h"
 # include "structures.h"
+# include "Replacement.h"
 
 /*
  ***************************************************************************

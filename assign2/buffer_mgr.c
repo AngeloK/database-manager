@@ -149,7 +149,12 @@ int *getFixCounts (BM_BufferPool *const bm) {
 // 	for (i = 0; i < bm_size; i++) {
 // 		numReadIO[i] = bs->pool[i].numReadIO;
 // 	}
-// 	return numReadIO;	
+// 	return numReadIO;
+
+
+
+	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+	return bs->numReadIO;
 // }
 // 
 // int getNumWriteIO (BM_BufferPool *const bm) {
@@ -161,5 +166,7 @@ int *getFixCounts (BM_BufferPool *const bm) {
 // 	for (i = 0; i < bm_size; i++) {
 // 		numWriteIO[i] = bs->pool[i].numWriteIO;
 // 	}
-// 	return numWriteIO;	
+// 	return numWriteIO;
+	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+	return bs->numWriteIO;
 // }

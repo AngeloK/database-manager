@@ -30,32 +30,3 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 RC forceFlushPool(BM_BufferPool *const bm) {
   return RC_OK;
 }
-
-RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page, 
-	    const PageNumber pageNum) {
-
-	// pageNum is found in mapping table.
-	if (bm->mapping[pageNum]) {
-		page->pageNum = pageNum;
-		page->data = *bm->mapping[pageNum];
-		return RC_OK;
-	}
-	
-	// pageNum is not found
-	Page_Frame *removed;
-	BM_PageHandle *p = (BM_PageHandle *)page;
-	Page_Frame *added  = newPageFrame(pageNum, p); 
-	
-	
-	
-	if (isPoolFull(bm)) {
-		if (repacement(bm, removed, add));
-		//ReplacementStrategy.
-	}
-	else {
-		//add pageNum to buffer pool.
-	}
-	
-	
-			
-}

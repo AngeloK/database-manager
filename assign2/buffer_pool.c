@@ -55,13 +55,3 @@ Hash* createHash( int totalNumPages);
  
     return hash;
 }
-
-Page_Frame* newPageFrame( int pageNum , BM_PageHandle page)
-{
-    Page_Frame* temp = (Page_Frame *)malloc( sizeof( Page_Frame ) );
-    temp->pageNumber = pageNum;
-    temp->pageHandle = page;
-    temp->prev = temp->next = NULL;
-    temp->is_dirty = FALSE;
-    temp->fix_count = 0;
-    return temp;

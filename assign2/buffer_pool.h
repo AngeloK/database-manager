@@ -33,17 +33,18 @@ typedef struct Hash
 
 
 typedef struct Buffer_Storage {
-  	Page_Frame *mapping[65536];
+	Page_Frame *mapping[65535];
 	Queue *pool;
-}
-
-#endif
+} Buffer_Storage;
 
 
-Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
+Buffer_Storage *initBufferStorage(char *pageFileName, int capacity);
 Queue *createQueue(int capacity);
 Hash *createHash(int totalNumPages);
-Page_Frame* newPageFrame(int pageNum, BM_PageHandle page);
+Page_Frame* newPageFrame(int pageNum, BM_PageHandle *page);
 
 int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame* add);
 int replaceByLRU (BM_BufferPool *bm, Page_Frame *remove, Page_Frame* add);
+int isPoolFull(BM_BufferPool *bm);
+
+#endif

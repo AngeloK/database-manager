@@ -6,7 +6,7 @@
 
 
 typedef struct Page_Frame {
-  int fix_coutn;
+  int fix_count;
   bool is_dirty;
   BM_PageHandle *pageHandle;
   
@@ -18,11 +18,13 @@ typedef struct Queue {
   Page_Frame *front;
   Page_Frame *rear;
   int count;
-  int capacity;
+  int q_capacity;
   int readIO;
   int writeIO;
 } Queue;
 
+
+// Depracted
 typedef struct Hash
 {
   int capacity; // how many pages can be there
@@ -31,8 +33,8 @@ typedef struct Hash
 
 
 typedef struct Buffer_Storage {
-  Hash *mapping;
-  Queue *pool;
+  	Page_Frame *mapping[65536];
+	Queue *pool;
 }
 
 #endif

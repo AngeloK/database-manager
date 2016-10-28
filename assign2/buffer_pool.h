@@ -43,3 +43,6 @@ typedef struct Buffer_Storage {
 Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
 Queue *createQueue(int capacity);
 Hash *createHash(int totalNumPages);
+
+int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame* add);
+int replaceByLRU (BM_BufferPool *bm, Page_Frame *remove, Page_Frame* add);

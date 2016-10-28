@@ -43,3 +43,4 @@ typedef struct Buffer_Storage {
 Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
 Queue *createQueue(int capacity);
 Hash *createHash(int totalNumPages);
+Page_Frame* newPageFrame(int pageNum, BM_PageHandle page);

@@ -65,4 +65,3 @@ Page_Frame* newPageFrame( int pageNum , BM_PageHandle page)
     temp->is_dirty = FALSE;
     temp->fix_count = 0;
     return temp;
-}

@@ -29,6 +29,7 @@ typedef int RC;
 
 /* Custom error codes */
 #define RC_BUFFER_BUSY 401
+#define RC_CANNOT_SHUTDOWN 400
 
 /* holder for error messages */
 extern char *RC_message;

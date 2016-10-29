@@ -94,6 +94,8 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	p->pageNum = pageNum;
 	Page_Frame *added  = newPageFrame(pageNum, page); 
 	
+	
+	
 	if (isPoolFull(bm)) {
 		if (bm->strategy == RS_FIFO) {
 			replaceByFIFO(bm, removed, added);
@@ -102,12 +104,39 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		//ReplacementStrategy.
 	}
 	else {
+		Queue *pool = bs->pool;
+		
+		
+		if (pool->count == 0) {
+			// pool is empty;
+			
+			pool->front = added;
+			pool->rear = added;
+			pool->count++;
+			
+		}
+		else {
+			pool->front->prev = added;
+			pool->front = added;
+			pool->count++;
+			// bs->pool->rear->next = added;
+			// added->prev = bs->pool->rear;
+			// bs->pool->rear = added;
+			// bs->pool->q_capacity++;
+		}
+		// Add new page to the end of the pool queue
+		
 		//add pageNum to buffer pool.
 		//enqueue.
+		// printf("added is %p\n", added);
+		// printf("pool size%d\n", bs->pool->q_capacity);
+		// bs->pool->rear->next = added;
+		// added->prev = bs->pool->rear;
+		// bs->pool->rear = added;
+		// bs->pool->q_capacity++;
+		// bs->mapping[pageNum] = added;
+		// Queue *pool = bs->pool;
 	}
-	
-	
-	printf("removed is %d\n", removed->pageHandle->pageNum);
 	
 	
 	// if (removed->is_dirty) {

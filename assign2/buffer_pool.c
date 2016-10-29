@@ -115,12 +115,12 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
   
   Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
   
-	Retrieve pool queue and capacity from BufferPool
+	// Retrieve pool queue and capacity from BufferPool
 	Queue *pool = bs->pool;
   
 	int size = pool->q_capacity;
 	
-	Add new page to the end of the pool queue
+	// Add new page to the end of the pool queue
 	pool->rear->next = add;
 	add->prev = pool->rear;
 	pool->rear = add;

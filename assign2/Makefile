@@ -6,7 +6,7 @@ tem_file = test_pagefile.bin
 all : test1
 
 test1 : $(objects) $(test_1_obj)
-	gcc -o $(exe_obj) $(objects) $(test_1_obj) 
+	gcc -Wall -g -o $(exe_obj) $(objects) $(test_1_obj) 
 	./$(exe_obj)
 
 clean :

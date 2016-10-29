@@ -60,7 +60,7 @@ testCreatingAndReadingDummyPages (void)
 
   CHECK(createPageFile("testbuffer.bin"));
 
-  // createDummyPages(bm, 22);
+  createDummyPages(bm, 22);
   // checkDummyPages(bm, 20);
   // 
   // createDummyPages(bm, 10000);
@@ -81,16 +81,15 @@ createDummyPages(BM_BufferPool *bm, int num)
 
   CHECK(initBufferPool(bm, "testbuffer.bin", 3, RS_FIFO, NULL));
   
-  for (i = 0; i < num; i++)
-    {
+  // for (i = 0; i < num; i++)
+    // {
       CHECK(pinPage(bm, h, i));
-      sprintf(h->data, "%s-%i", "Page", h->pageNum);
-      CHECK(markDirty(bm, h));
-      CHECK(unpinPage(bm,h));
-    }
+      // sprintf(h->data, "%s-%i", "Page", h->pageNum);
+      // CHECK(markDirty(bm, h));
+      // CHECK(unpinPage(bm,h));
+    // }
 
   CHECK(shutdownBufferPool(bm));
-
   free(h);
 }
 

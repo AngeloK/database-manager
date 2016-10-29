@@ -18,13 +18,11 @@ Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
   openPageFile(pageFileName, &fh);
   int totalNumPages = fh->totalNumPages;
   closePageFile(&fh);
-  // Hash *mapping = createHash(totalNumPages);
   Queue *pool = createQueue(capacity);
   Buffer_Storage *bs;
-  // bs->mapping = mapping;
+  bs = (Buffer_Storage *)malloc(sizeof(Buffer_Storage));
   bs->pool = pool;
   return bs;
-  
 }
 
 Queue *createQueue(int capacity) {
@@ -83,6 +81,8 @@ Page_Frame *loadFromPageFile(char *pageFileName, PageNumber pageNum) {
     
     pageHandle->pageNum = pageNum;
     pageHandle->data = ph;
+    
+    closePageFile(&fh);
     return pageHandle;
 }
 
@@ -96,4 +96,51 @@ int isPoolFull(BM_BufferPool *bm) {
     return 0;
   }
 }
-RC writeToDisk(BM_PageHandle *page);
+RC writeToDisk(BM_BufferPool *bm, BM_PageHandle *page) {
+  SM_FileHandle fh;
+  openPageFile(bm->pageFile, &fh);
+  SM_PageHandle ph;
+  ph = (SM_PageHandle) malloc(PAGE_SIZE);
+  if (fh.totalNumPages < page->pageNum) {
+    ensureCapacity(page->pageNum+1, &fh);
+  }
+  ph = page->data;
+  writeBlock(page->pageNum, &fh, ph);
+  closePageFile(&fh);
+  free(ph);
+}
+
+int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
+  
+  Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+
+	// Retrieve pool queue and capacity from BufferPool
+	Queue *pool = bs->pool;
+	int size = pool->q_capacity;
+	
+	// Add new page to the end of the pool queue
+	pool->rear->next = add;
+	add->prev = pool->rear;
+	pool->rear = add;
+
+	int i = 0;
+
+	// Initialize head to pool queue head	
+	remove = pool->front;
+	while (remove != NULL) {
+		
+		// Find the first in queue to have 0 fix_count
+		if (remove->fix_count == 0) {
+			remove->prev->next = remove->next;
+			remove->next->prev = remove->prev;
+			break;
+		} 
+		remove = remove->next;
+	}
+
+	if (remove == NULL) {
+		return -1;
+	}
+
+	return 0;
+}

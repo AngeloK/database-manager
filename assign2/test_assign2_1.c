@@ -59,14 +59,23 @@ testCreatingAndReadingDummyPages (void)
   testName = "Creating and Reading Back Dummy Pages";
 
   CHECK(createPageFile("testbuffer.bin"));
+  
+  // SM_FileHandle fh;
+  // SM_PageHandle *ph;
+  // 
+  // ph = (char *)malloc(PAGE_SIZE);
+  // 
+  // openPageFile("testbuffer.bin", &fh);
+  // readBlock(19, &fh, ph);
+  // printf("ph is %s\n", ph);
 
   createDummyPages(bm, 22);
-  // checkDummyPages(bm, 20);
+  checkDummyPages(bm, 20);
   // 
-  // createDummyPages(bm, 10000);
-  // checkDummyPages(bm, 10000);
+  createDummyPages(bm, 10000);
+  checkDummyPages(bm, 9997);
   // 
-  CHECK(destroyPageFile("testbuffer.bin"));
+  // CHECK(destroyPageFile("testbuffer.bin"));
 
   free(bm);
   TEST_DONE();
@@ -80,15 +89,13 @@ createDummyPages(BM_BufferPool *bm, int num)
   BM_PageHandle *h = MAKE_PAGE_HANDLE();
 
   CHECK(initBufferPool(bm, "testbuffer.bin", 3, RS_FIFO, NULL));
-  printf("pagefile is %s\n", bm->pageFile);
-  printf("buffer pool size is %d\n", bm->numPages);
   
   for (i = 0; i < num; i++)
     {
       CHECK(pinPage(bm, h, i));
-      // sprintf(h->data, "%s-%i", "Page", h->pageNum);
-      // CHECK(markDirty(bm, h));
-      // CHECK(unpinPage(bm,h));
+      sprintf(h->data, "%s-%i", "Page", h->pageNum);
+      CHECK(markDirty(bm, h));
+      CHECK(unpinPage(bm,h));
     }
 
   CHECK(shutdownBufferPool(bm));

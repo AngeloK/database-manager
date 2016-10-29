@@ -153,5 +153,7 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
 		return -1;
 	}
   
-	return 0;
+  printf("remove in FIFO is %d\n", remove->pageHandle->pageNum);
+  
+	return remove->pageHandle->pageNum;
 }

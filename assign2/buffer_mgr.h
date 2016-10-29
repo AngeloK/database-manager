@@ -48,8 +48,8 @@ RC shutdownBufferPool(BM_BufferPool *const bm);
 RC forceFlushPool(BM_BufferPool *const bm);
 
 // Buffer Manager Interface Access Pages
-// RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page);
-// RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page);
+RC markDirty (BM_BufferPool *const bm, BM_PageHandle *const page);
+RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page);
 // RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page);
 RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page, 
 	    const PageNumber pageNum);

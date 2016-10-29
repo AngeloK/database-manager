@@ -97,13 +97,13 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	
 	if (isPoolFull(bm)) {
-		printf("it's full\n");
-		if (bm->strategy == RS_FIFO) {
-			replaceByFIFO(bm, removed, added);
-		}
-		if (bm->strategy == RS_LFU) {
-			// LRU;
-		}
+		// printf("it's full\n");
+		// if (bm->strategy == RS_FIFO) {
+		// 	replaceByFIFO(bm, removed, added);
+		// }
+		// if (bm->strategy == RS_LFU) {
+		// 	// LRU;
+		// }
 		return 0;
 	}
 	else {
@@ -129,16 +129,16 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	}
 	
 	// added new mapping.
-	bs->mapping[pageNum] = added;
+	// bs->mapping[pageNum] = added;
 	
-	if (removed->is_dirty) {
-		writeToDisk(bm, removed);
+	// if (removed->is_dirty) {
+	// 	writeToDisk(bm, removed);
 		// write to disk.
-	}
+	// }
 	
 	//assinge new to pageHandle;
-	page->pageNum = added->pageHandle->pageNum;
-	page->data = added->pageHandle->data;
+	// page->pageNum = added->pageHandle->pageNum;
+	// page->data = added->pageHandle->data;
 	return RC_OK;
 }
 

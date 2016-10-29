@@ -49,9 +49,9 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 	temp = temp->next;
   }
   CHECK(closePageFile(&fHandle))
-  free(q->front);
-  free(q->rear);
-  free(q);
+  // free(q->front);
+  // free(q->rear);
+  // free(q);
 	
 	//free mapping.
 	int i;
@@ -105,6 +105,7 @@ RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page) {
 RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page, 
 	    const PageNumber pageNum) {
 	// pageNum is found in mapping table.
+	
 	printf("pinPage is %d\n", pageNum);
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 	
@@ -116,6 +117,24 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	Page_Frame *removed;
 	Page_Frame *added  = newPageFrame(pageNum, p); 
 	Queue *pool = bs->pool;
+	
+	
+	printf("===hash table====\n");
+	// if (pool->front) {
+	// 	printf("queue front is %d\n", pool->front->pageHandle->pageNum);
+	// 	if (pool->front->next){
+	// 		printf("queue \n", );
+	// 	}
+	// }
+	if (pool->rear)
+		printf("queue rear is %d\n", pool->rear->pageHandle->pageNum);
+	// for (size_t i = 0; i < 20; i++) {
+	// 	if (bs->mapping[i] != NULL) {
+	// 		printf("mapped pageNum is %d\n", i);
+	// 	}
+	// 	/* code */
+	// }
+	printf("=====hash table end====\n");
 	
 	// read from mapping.
 	if (bs->mapping[pageNum]) {
@@ -333,15 +352,15 @@ RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 PageNumber *getFrameContents (BM_BufferPool *const bm) {
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
   PageNumber *arrnumP1 = (PageNumber *)malloc(bm->numPages * sizeof(PageNumber));
-	printf("size of arrnumP1 is %d\n", sizeof(arrnumP1));
 	Queue *q = bs->pool;
 	Page_Frame *p = q->front;
 	int i=0;
-	while(p!= NULL){		
-	    arrnumP1[i] = p->pageHandle->pageNum;
-			p = p->next;
-			i++;
-  }
+	
+	// while(p!= NULL){		
+	//     arrnumP1[i] = p->pageHandle->pageNum;
+	// 		p = p->next;
+	// 		i++;
+  // }
   return arrnumP1;
 }
 

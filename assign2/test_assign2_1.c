@@ -47,8 +47,8 @@ main (void)
   testName = "";
 
   testCreatingAndReadingDummyPages();
-  //  testReadPage();
-  //  testFIFO();
+  // testReadPage();
+  // testFIFO();
   // testLRU();
 }
 
@@ -76,10 +76,10 @@ testCreatingAndReadingDummyPages (void)
   
 
   createDummyPages(bm, 22);
-  checkDummyPages(bm, 20);
-  
-  createDummyPages(bm, 10000);
-  checkDummyPages(bm, 10000);
+  // checkDummyPages(bm, 20);
+  // 
+  // createDummyPages(bm, 10000);
+  // checkDummyPages(bm, 10000);
   //
   CHECK(destroyPageFile("testbuffer.bin"));
   
@@ -107,7 +107,6 @@ createDummyPages(BM_BufferPool *bm, int num)
       printf("h->pageNum=%d\n", h->pageNum);
       CHECK(unpinPage(bm,h));
     }
-    
 
   CHECK(shutdownBufferPool(bm));
   free(h);

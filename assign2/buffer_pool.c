@@ -133,7 +133,7 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
 		pool->rear->next = add;
 	}
 	add->prev = pool->rear;
-  add->next = NULL;
+  // add->next = NULL;
 	pool->rear = add;
   
 	int i = 0;

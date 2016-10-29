@@ -78,10 +78,31 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	    const PageNumber pageNum) {
 	// pageNum is found in mapping table.
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+	
+  SM_PageHandle ph;
+  ph = (SM_PageHandle) malloc(PAGE_SIZE);
+		
 	if (bs->mapping[pageNum]) {
 		page->pageNum = pageNum;
 		page->data = (bs->mapping[pageNum])->pageHandle->data;
 		return RC_OK;
+	}
+	else {
+    SM_FileHandle fh;
+    openPageFile(bm->pageFile, &fh);
+    
+    if (fh.totalNumPages < pageNum) {
+      ensureCapacity(pageNum+1, &fh);
+    }
+    readBlock(pageNum, &fh, ph);
+
+    // BM_PageHandle *pageHandle = MAKE_PAGE_HANDLE();
+    // 
+    // pageHandle->pageNum = pageNum;
+    // pageHandle->data = ph;
+    
+    closePageFile(&fh);
+    // return pageHandle;
 	}
 	Queue *pool = bs->pool;
 	
@@ -89,10 +110,11 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	// pageNum is not found
 	Page_Frame *removed;
-	BM_PageHandle *p = (BM_PageHandle *)page;
+	BM_PageHandle *p = MAKE_PAGE_HANDLE();
 	
+	p->data = ph;
 	p->pageNum = pageNum;
-	Page_Frame *added  = newPageFrame(pageNum, page); 
+	Page_Frame *added  = newPageFrame(pageNum, p); 
 	
 	
 	
@@ -122,24 +144,22 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 			added->prev = pool->rear;
 			pool->rear = added;
 			pool->count++;
-			// bs->pool->rear->next = added;
-			// added->prev = bs->pool->rear;
-			// bs->pool->rear = added;
-			// bs->pool->q_capacity++;
 		}
 	}
 	
 	// added new mapping.
+	printf("rear %d\n", pool->rear->pageHandle->pageNum);
+	printf("front %d\n", pool->front->pageHandle->pageNum);
 	bs->mapping[pageNum] = added;
+	// printf("removed is %d\n", removed->pageHandle->pageNum);
+	// if (removed->is_dirty) {
+	// 	writeToDisk(bm, removed);
+	// 	write to disk.
+	// }
 	
-	if (removed->is_dirty) {
-		writeToDisk(bm, removed);
-		// write to disk.
-	}
-	printf("rear%d\n", added->pageHandle->pageNum);
-	printf("rear%d\n", pool->front->pageHandle->pageNum);
 	
 	//assinge new to pageHandle;
+	
 	page->pageNum = added->pageHandle->pageNum;
 	page->data = added->pageHandle->data;
 	return RC_OK;

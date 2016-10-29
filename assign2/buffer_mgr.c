@@ -118,8 +118,9 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 			
 		}
 		else {
-			pool->front->prev = added;
-			pool->front = added;
+			pool->rear->next = added;
+			added->prev = pool->rear;
+			pool->rear = added;
 			pool->count++;
 			// bs->pool->rear->next = added;
 			// added->prev = bs->pool->rear;
@@ -136,7 +137,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		// write to disk.
 	}
 	printf("rear%d\n", added->pageHandle->pageNum);
-	// printf("rear%d\n", pool->front->pageHandle->pageNum);
+	printf("rear%d\n", pool->front->pageHandle->pageNum);
 	
 	//assinge new to pageHandle;
 	page->pageNum = added->pageHandle->pageNum;

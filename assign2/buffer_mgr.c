@@ -62,23 +62,38 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 }
 
 RC forceFlushPool(BM_BufferPool *const bm) {
-	// SM_FileHandle fHandle;   
-	// Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
-	// Queue *q = bs -> pool;
-	// CHECK(openPageFile(bm->pageFile, &fHandle))
-	// Page_Frame *temp = q->front; 
-	// while(temp!=NULL){
-	// 	if(temp->is_dirty == TRUE && temp-> fix_count == 0 ){
-	// 		CHECK(writeBlock(temp-> pageHandle->pageNum, &fHandle, temp-> pageHandle->data));
-	// 		temp->is_dirty = FALSE;
-	// 		q->writeIO++;
-	// 		
-	// 	}
-	// 	temp = temp->next;
-	// }
-	// CHECK(closePageFile( &fHandle));
+	SM_FileHandle fHandle;   
+	Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
+	Queue *q = bs -> pool;
+	CHECK(openPageFile(bm->pageFile, &fHandle))
+	Page_Frame *temp = q->front; 
+	while(temp!=NULL){
+		// printf("temp->%d\n", temp->pageHandle->pageNum );
+		if(temp->is_dirty == TRUE && temp-> fix_count == 0 ){
+			CHECK(writeBlock(temp-> pageHandle->pageNum, &fHandle, temp-> pageHandle->data));
+			temp->is_dirty = FALSE;
+			q->writeIO++;
+			
+		}
+		temp = temp->next;
+	}
+	CHECK(closePageFile( &fHandle));
 	return RC_OK;
 }
+
+RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page) {
+	SM_FileHandle fHandle;   
+	Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
+	Queue *q = bs -> pool;
+	CHECK(openPageFile(bm->pageFile, &fHandle));
+
+	ensureCapacity(page->pageNum, &fHandle);
+	writeBlock(page->pageNum, &fHandle, page->data);
+	q->writeIO++;
+	CHECK(closePageFile( &fHandle));
+	return RC_OK;
+}
+
 
 RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page, 
 	    const PageNumber pageNum) {
@@ -98,7 +113,10 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	// read from mapping.
 	if (bs->mapping[pageNum]) {
 		page->pageNum = pageNum;
+		// printf("bs->mapping->pageHandle->data=%s\n", bs->mapping[pageNum]->pageHandle->data);
+		// printf("page->data %p\n", page->data);
 		page->data = (bs->mapping[pageNum])->pageHandle->data;
+		
 		return RC_OK;
 	}
 	// read from block.
@@ -109,6 +127,19 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
       ensureCapacity(pageNum+1, &fh);
     }
     readBlock(pageNum, &fh, ph);
+		
+		BM_PageHandle *newPageHandle = MAKE_PAGE_HANDLE();
+		
+		newPageHandle->pageNum = pageNum;
+		newPageHandle->data = ph;
+		
+		Page_Frame *newPF = newPageFrame(pageNum, newPageHandle);
+	
+		printf("new mapping added for pageNum %d\n", pageNum);
+		
+		bs->mapping[pageNum] = newPF;
+		
+		pool->readIO++;
 
     // BM_PageHandle *pageHandle = MAKE_PAGE_HANDLE();
     // 
@@ -142,7 +173,10 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 				CHECK(writeBlock(replaced, &fHandle, bs->mapping[replaced]->pageHandle->data));
 				// free(removed);
 				pool->writeIO++;
-				CHECK(closePageFile( &fHandle))
+				CHECK(closePageFile( &fHandle));
+				
+				bs->mapping[replaced] = NULL;
+				
 			}
 			else {
 				printf("not dirty\n");
@@ -196,7 +230,20 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	// printf("h is %s\n", page->data);
 	
 	// free(added);
+	
+	printf("====pool====\n");
+	// for (size_t i = 0; i < 25; i++) {
+		// printf("mapping[%d] is %p\n", i, bs->mapping[i]);
+		// bs->mapping[i]
+		/* code */
+	// }
+	
+	// printf("pool-0\n", pool->front->next->pageHandle->pageNum);
+	// printf("pool-2\n", pool->rear->prev->pageHandle->pageNum);
+	
+	printf("====pool====\n");
 	return RC_OK;
+	
 }
 
 
@@ -227,10 +274,35 @@ RC markDirty(BM_BufferPool * const bm, BM_PageHandle * const page)
 RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+	printf("unpin page num is %d\n", page->pageNum);
+	printf("bs address %p\n", bm);
+	Queue *q = bs->pool;
 	if (bs->mapping[page->pageNum]) {
-		//TODO fix_count is 0;
-		printf("in unpin%s\n", bs->mapping[page->pageNum]->fix_count);
-		// bs->mapping[page->pageNum]->fix_count--;
+		// Page_Frame *temp = q->front; 
+		// while(temp!=NULL){
+		// 	printf("temp page num %d\n", temp->pageHandle->pageNum);
+		// 	if(temp->pageHandle->pageNum == page->pageNum){
+		// 		printf("found iin pool %d\n", temp->pageHandle->pageNum);
+		// 		temp->fix_count--;
+		// 		printf("fix count now is %d\n", temp->fix_count);
+		// 		// return rc_cannot_shutdown;
+		// 	}
+		// if(temp->is_dirty == true ){
+		// 	printf("temp is %s\n", temp->pageHandle->data);
+		// 	CHECK(writeBlock(temp-> pageHandle->pageNum, &fHandle, temp-> pageHandle->data));
+		// 	temp->is_dirty = FALSE;
+		// 	q->writeIO++;
+		// 	
+		// }
+		// else {
+		// 	printf("left is not dirty\n");
+		// 	printf("temp is %s\n", temp->pageHandle->data);
+		// }
+		// 	temp = temp->next;
+		// }
+	// 	//TODO fix_count is 0;
+	// 	// printf("in unpin%s\n", bs->mapping[page->pageNum]->fix_count);
+		bs->mapping[page->pageNum]->fix_count--;
 		return RC_OK;
 	} 
 	else {
@@ -238,49 +310,83 @@ RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 		printf("gose here error\n");
 		return -1;
 	}
+	return RC_OK;
+}
+
+PageNumber *getFrameContents (BM_BufferPool *const bm) {
+	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+  PageNumber *arrnumP1 = (PageNumber *)malloc(bm->numPages * sizeof(PageNumber));
+	printf("size of arrnumP1 is %d\n", sizeof(arrnumP1));
+	Queue *q = bs->pool;
+	Page_Frame *p = q->front;
+	int i=0;
+	while(p!= NULL){		
+	    arrnumP1[i] = p->pageHandle->pageNum;
+			p = p->next;
+			i++;
+  }
+  return arrnumP1;
 }
 
 
+bool *getDirtyFlags (BM_BufferPool *const bm)
+{
+  int index = 0;
+  Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
+  Queue *q = md -> pool;
+  bool *count = (bool *)malloc(sizeof(bool)*bm->numPages);
+  Page_Frame *temp = q->front;
+  while(temp!=NULL){
+		printf("temp is dirty %d, pagenum is %d\n", temp->is_dirty, temp->pageHandle->pageNum);
+	count[index++]=temp->is_dirty;
+	temp = temp->next;
+	
+	
+  Page_Frame *t2 = q->front;
+	
+	printf("=====\n");
+	printf("pool size is %d\n", q->q_capacity);
+	// while(t2!=NULL) {
+		// printf("pool pageNum is %d\n", t2->pageHandle->pageNum);
+		// printf("pool pageNum is dirty=%d\n", t2->is_dirty);
+		
+		// printf("pool-0 is %d\n", t2->pageHandle->pageNum);
+		// printf("pool-1 is %d\n", t2->next->pageHandle->pageNum);
+		// printf("pool-2 is %d\n", t2->next->next->pageHandle->pageNum);
+		// 
+		// 
+		// t2 = t2->next;
+	// }
+	printf("=====\n");
+  }
 
-// bool *getDirtyFlags (BM_BufferPool *const bm)
-// {
-//   int index = 0;
-//   Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
-//   Queue *q = md -> pool;
-//   bool *count = (bool *)malloc(sizeof(bool)*bm->numPages);
-//   Page_Frame *temp = q->front;
-//   while(temp!=NULL){
-// 	count[index++]=temp->is_dirty;
-// 	temp = temp->next;
-//   }
-// 
-//  return count;
-// }
-// 
-// int *getFixCounts (BM_BufferPool *const bm)
-// {
-//   int index = 0;
-//   Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
-//   Queue *q = md -> pool;
-//   int *count = (int *)malloc(sizeof(int)*bm->numPages);
-//   Page_Frame *temp = q->front;
-//     while(temp!=NULL){
-// 	count[index++]=temp-> fix_count;
-// 	temp = temp->next;
-//   }
-//   return count;
-// }
-// 
-// int getNumReadIO (BM_BufferPool *const bm)
-// {
-//   Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
-//   Queue *q = md -> pool;
-//   return q-> readIO;
-// }
-// 
-// int getNumWriteIO (BM_BufferPool *const bm)
-// {
-//   Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
-//   Queue *q = md -> pool;
-//   return q-> writeIO;
-// }
+ return count;
+}
+
+int *getFixCounts (BM_BufferPool *const bm)
+{
+  int index = 0;
+  Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
+  Queue *q = md -> pool;
+  int *count = (int *)malloc(sizeof(int)*bm->numPages);
+  Page_Frame *temp = q->front;
+    while(temp!=NULL){
+	count[index++]=temp-> fix_count;
+	temp = temp->next;
+  }
+  return count;
+}
+
+int getNumReadIO (BM_BufferPool *const bm)
+{
+  Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
+  Queue *q = md -> pool;
+  return q-> readIO;
+}
+
+int getNumWriteIO (BM_BufferPool *const bm)
+{
+  Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
+  Queue *q = md -> pool;
+  return q-> writeIO;
+}

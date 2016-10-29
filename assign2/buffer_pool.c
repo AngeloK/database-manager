@@ -61,7 +61,7 @@ Page_Frame* newPageFrame( int pageNum , BM_PageHandle *page)
     temp->pageHandle = page;
     temp->prev = temp->next = NULL;
     temp->is_dirty = FALSE;
-    temp->fix_count = 0;
+    temp->fix_count = 1;
     return temp;
 }
 // 
@@ -124,6 +124,7 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
 		pool->rear->next = add;
 	}
 	add->prev = pool->rear;
+  add->next = NULL;
 	pool->rear = add;
   
 	int i = 0;
@@ -157,3 +158,57 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
   
 	return remove->pageHandle->pageNum;
 }
+
+
+// int replaceByLRU (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
+// 	
+// 	// Retrieve pool queue and capacity from BufferPool
+// 	Buffer_Storage *bs = (Buffer_Storage*) bm->mgmtData;
+// 	Queue *pool = bs->pool;
+// 
+// 	// Start with the front of the pool
+// 	Page_Frame *lowest = NULL;
+// 	Page_Frame *current = pool->front;
+// 	
+// 	// Search through the queue for lowest last used time
+// 	while (current != NULL) {
+// 		
+// 		if (current->fix_count > 0) { // No point proceeding. Cannot Replace
+//       current = current->next;
+// 			continue;
+// 		} else if (lowest == NULL) { // Lowest has no prior assignment
+// 			lowest = current;
+// 		} else {
+// 					
+// 			if (lowest->lastUsed < current->lastUsed) {
+// 				lowest = current;
+// 			}
+// 			current = current->next;
+// 		}
+// 	}
+// 	
+// 	if (lowest == NULL) {
+// 		return -1;
+// 	}
+
+	// Remove the lowest found time
+// 	remove = lowest;
+// 
+// 	// Put new buffer in its place
+// 	if (lowest->prev == NULL) {
+// 		pool->front = add;
+// 	} else {
+// 		lowest->prev->next = add;
+// 	}
+// 	add->prev = lowest->prev;
+// 
+// 	if (lowest->next == NULL) {
+// 		pool->rear = add;
+// 	} else {
+// 		lowest->next->prev = add;
+// 	}
+// 	add->next = lowest->next;
+// 
+//   printf("remove in LRU is %d\n", remove->pageHandle->pageNum);
+// 	return remove->pageHandle->pageNum;
+// }

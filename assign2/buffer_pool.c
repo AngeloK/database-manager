@@ -28,6 +28,7 @@ Queue *createQueue(int capacity) {
   Queue* queue = (Queue *)malloc( sizeof( Queue ) );
 
   // The queue is empty
+  queue->lru_lastUsed = 0;
   queue->count = 0;
   queue->front = queue->rear = NULL;
 
@@ -62,6 +63,7 @@ Page_Frame* newPageFrame( int pageNum , BM_PageHandle *page)
     temp->prev = temp->next = NULL;
     temp->is_dirty = FALSE;
     temp->fix_count = 1;
+    temp->lastUsed = 0;
     return temp;
 }
 // 
@@ -158,7 +160,6 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
   
 	return remove->pageHandle->pageNum;
 }
-
 
 // int replaceByLRU (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
 // 	

@@ -166,6 +166,28 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 }
 
 
+RC markDirty(BM_BufferPool * const bm, BM_PageHandle * const page)
+{
+	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
+	
+	
+	Page_Frame *pf;
+	BM_PageHandle *ph = MAKE_PAGE_HANDLE();
+	ph->data = page->data;
+	ph->pageNum = page->pageNum;
+
+	if (bs->mapping[page->pageNum]) {
+		pf = bs->mapping[page->pageNum];
+		pf->pageHandle = ph;
+		pf->is_dirty = true;
+		return RC_OK;
+	} 
+	else {
+		// error.
+		return -1;
+	}
+}
+
 // bool *getDirtyFlags (BM_BufferPool *const bm)
 // {
 //   int index = 0;

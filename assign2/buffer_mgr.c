@@ -187,6 +187,34 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	// pageNum is not found
 	
 	
+	if (bm->strategy == RS_FIFO) {
+		replaced = Replacement(bs->pool);
+		if (replaced > -1 && bs->mapping[replaced]->is_dirty){
+			printf("removed is %d\n", replaced);
+			printf("goes here is =1\n");
+			
+			// printf("we have dirty page-%d\n", removed->pageHandle->pageNum);
+			// writeToDisk(bm, removed);
+			// write to disk.
+			SM_FileHandle fHandle;
+			CHECK(openPageFile(bm->pageFile, &fHandle));
+			CHECK(writeBlock(replaced, &fHandle, bs->mapping[replaced]->pageHandle->data));
+			// free(removed);
+			pool->writeIO++;
+			CHECK(closePageFile( &fHandle));
+			
+			bs->mapping[replaced] = NULL;
+			
+		}
+		else {
+			printf("not dirty\n");
+		}
+	}
+	else {
+		//LRU
+	}
+	
+	
 	if (isPoolFull(bm)) {
 		printf("it's full\n");
 		if (bm->strategy == RS_FIFO) {

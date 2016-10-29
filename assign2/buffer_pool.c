@@ -112,8 +112,6 @@ RC writeToDisk(BM_BufferPool *bm, BM_PageHandle *page) {
 }
 
 int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
-  
-  
   Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
   
 	// Retrieve pool queue and capacity from BufferPool
@@ -122,7 +120,9 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
 	int size = pool->q_capacity;
 	
 	// Add new page to the end of the pool queue
-	pool->rear->next = add;
+	if (pool->rear != NULL) {
+		pool->rear->next = add;
+	}
 	add->prev = pool->rear;
 	pool->rear = add;
   
@@ -130,12 +130,20 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
   
 	// Initialize head to pool queue head	
 	remove = pool->front;
-	while (remove != NULL) {
-		
+	while (remove != NULL) {	
 		// Find the first in queue to have 0 fix_count
 		if (remove->fix_count == 0) {
-			remove->prev->next = remove->next;
-			remove->next->prev = remove->prev;
+			if (remove->prev == NULL) {
+				pool->front = remove->next;
+			} else {
+				remove->prev->next = remove->next;
+			}
+
+			if (remove->next == NULL) {
+				pool->rear = remove->prev;
+			} else {
+				remove->next->prev = remove->prev;
+			}
 			break;
 		} 
 		remove = remove->next;

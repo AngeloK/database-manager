@@ -104,7 +104,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		if (bm->strategy == RS_LFU) {
 			// LRU;
 		}
-		return 0;
+		// return 0;
 	}
 	else {
 		
@@ -135,6 +135,8 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		writeToDisk(bm, removed);
 		// write to disk.
 	}
+	printf("rear%d\n", added->pageHandle->pageNum);
+	// printf("rear%d\n", pool->front->pageHandle->pageNum);
 	
 	//assinge new to pageHandle;
 	page->pageNum = added->pageHandle->pageNum;

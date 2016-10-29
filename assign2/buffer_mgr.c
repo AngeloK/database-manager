@@ -19,6 +19,7 @@ RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName,
     bm->pageFile = (char *)pageFileName;
     bm->numPages = numPages;
     bm->strategy = strategy;
+		printf("numPages is %d\n", numPages);
     bm->mgmtData = (Buffer_Storage *)initBufferStorage(pageFileName, numPages);
     
   return RC_OK;
@@ -89,7 +90,9 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	// pageNum is not found
 	Page_Frame *removed;
 	BM_PageHandle *p = (BM_PageHandle *)page;
-	Page_Frame *added  = newPageFrame(pageNum, p); 
+	
+	p->pageNum = pageNum;
+	Page_Frame *added  = newPageFrame(pageNum, page); 
 	
 	if (isPoolFull(bm)) {
 		if (bm->strategy == RS_FIFO) {
@@ -102,6 +105,9 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		//add pageNum to buffer pool.
 		//enqueue.
 	}
+	
+	
+	printf("removed is %d\n", removed->pageHandle->pageNum);
 	
 	
 	// if (removed->is_dirty) {

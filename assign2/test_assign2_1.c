@@ -80,14 +80,16 @@ createDummyPages(BM_BufferPool *bm, int num)
   BM_PageHandle *h = MAKE_PAGE_HANDLE();
 
   CHECK(initBufferPool(bm, "testbuffer.bin", 3, RS_FIFO, NULL));
+  printf("pagefile is %s\n", bm->pageFile);
+  printf("buffer pool size is %d\n", bm->numPages);
   
-  // for (i = 0; i < num; i++)
-    // {
+  for (i = 0; i < num; i++)
+    {
       CHECK(pinPage(bm, h, i));
       // sprintf(h->data, "%s-%i", "Page", h->pageNum);
       // CHECK(markDirty(bm, h));
       // CHECK(unpinPage(bm,h));
-    // }
+    }
 
   CHECK(shutdownBufferPool(bm));
   free(h);

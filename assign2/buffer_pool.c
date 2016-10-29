@@ -19,6 +19,13 @@ Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
   Buffer_Storage *bs;
   bs = (Buffer_Storage *)malloc(sizeof(Buffer_Storage));
   bs->pool = pool;
+  
+  
+  //Init hash, it's important when tesing in server end.
+  int i;
+  for (i = 0; i < 65535; i++) {
+    bs->mapping[i] = NULL;
+  }
   return bs;
 }
 

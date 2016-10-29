@@ -69,16 +69,23 @@ testCreatingAndReadingDummyPages (void)
   // openPageFile("testbuffer.bin", &fh);
   // readBlock(19, &fh, ph);
   // printf("ph is %s\n", ph);
+  
+  // print mapping.
+  Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
+  int i;
+  
 
   createDummyPages(bm, 22);
-  // checkDummyPages(bm, 20);
+  checkDummyPages(bm, 20);
   
-  // createDummyPages(bm, 10000);
-  // checkDummyPages(bm, 9997);
+  createDummyPages(bm, 10000);
+  checkDummyPages(bm, 10000);
   //
-  // CHECK(destroyPageFile("testbuffer.bin"));
+  CHECK(destroyPageFile("testbuffer.bin"));
+  
 
   free(bm);
+  
   TEST_DONE();
 }
 
@@ -93,9 +100,11 @@ createDummyPages(BM_BufferPool *bm, int num)
   CHECK(initBufferPool(bm, "testbuffer.bin", 3, RS_FIFO, NULL));
   for (i = 0; i < num; i++)
     {
+      printf("check pageNum %d\n", i);
       CHECK(pinPage(bm, h, i));
       sprintf(h->data, "%s-%i", "Page", h->pageNum);
       CHECK(markDirty(bm, h));
+      printf("h->pageNum=%d\n", h->pageNum);
       CHECK(unpinPage(bm,h));
     }
     
@@ -116,7 +125,6 @@ checkDummyPages(BM_BufferPool *bm, int num)
   for (i = 0; i < num; i++)
     {
       CHECK(pinPage(bm, h, i));
-
       sprintf(expected, "%s-%i", "Page", h->pageNum);
       ASSERT_EQUALS_STRING(expected, h->data, "reading back dummy page content");
 

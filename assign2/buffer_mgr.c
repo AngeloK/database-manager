@@ -48,11 +48,18 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 	}
 	temp = temp->next;
   }
-  CHECK(closePageFile( &fHandle))
+  CHECK(closePageFile(&fHandle))
   free(q->front);
   free(q->rear);
   free(q);
-  // free(bs->mapping);
+	
+	//free mapping.
+	int i;
+	printf("free mapping\n");
+	for (i = 0; i < 10000; i++) {
+		bs->mapping[i] = NULL;
+	}
+	
   free(bs);
   q = NULL;
   bs = NULL;
@@ -112,10 +119,14 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	// read from mapping.
 	if (bs->mapping[pageNum]) {
-		page->pageNum = pageNum;
+		// page->pageNum = pageNum;
 		// printf("bs->mapping->pageHandle->data=%s\n", bs->mapping[pageNum]->pageHandle->data);
 		// printf("page->data %p\n", page->data);
+		// page->data = (bs->mapping[pageNum])->pageHandle->data;
+			
+		printf("found in mapping %d\n", pageNum);
 		page->data = (bs->mapping[pageNum])->pageHandle->data;
+		// page->data = pageNum;
 		
 		return RC_OK;
 	}
@@ -149,9 +160,9 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		printf("ph is %s\n", ph);
     closePageFile(&fh);
     // return pageHandle;
+		p->data = ph;
+		p->pageNum = pageNum;
 	}
-	p->data = ph;
-	p->pageNum = pageNum;
 	// BM_PageHandle *loadedPage = loadFromPageFile(bm->pageFile, pageNum);
 	
 	// pageNum is not found
@@ -231,17 +242,15 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	// free(added);
 	
-	printf("====pool====\n");
+	// printf("====pool====\n");
 	// for (size_t i = 0; i < 25; i++) {
-		// printf("mapping[%d] is %p\n", i, bs->mapping[i]);
-		// bs->mapping[i]
-		/* code */
+	// 	printf("mapping[%d] is %p\n", i, bs->mapping[i]);
 	// }
 	
 	// printf("pool-0\n", pool->front->next->pageHandle->pageNum);
 	// printf("pool-2\n", pool->rear->prev->pageHandle->pageNum);
 	
-	printf("====pool====\n");
+	// printf("====pool====\n");
 	return RC_OK;
 	
 }
@@ -257,6 +266,8 @@ RC markDirty(BM_BufferPool * const bm, BM_PageHandle * const page)
 	BM_PageHandle *ph = MAKE_PAGE_HANDLE();
 	ph->data = page->data;
 	ph->pageNum = page->pageNum;
+	
+	
 
 	if (bs->mapping[page->pageNum]) {
 		pf = bs->mapping[page->pageNum];
@@ -274,7 +285,13 @@ RC markDirty(BM_BufferPool * const bm, BM_PageHandle * const page)
 RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
-	printf("unpin page num is %d\n", page->pageNum);
+	
+	Page_Frame *pf;
+	BM_PageHandle *ph = MAKE_PAGE_HANDLE();
+	ph->data = page->data;
+	ph->pageNum = page->pageNum;
+	printf("unpin page num is %d\n", ph->pageNum);
+	printf("data in page is %s\n", ph->data);
 	printf("bs address %p\n", bm);
 	Queue *q = bs->pool;
 	if (bs->mapping[page->pageNum]) {

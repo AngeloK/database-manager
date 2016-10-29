@@ -1,5 +1,5 @@
 #include "storage_mgr.h"
-// #include "buffer_mgr_stat.h"
+#include "buffer_mgr_stat.h"
 #include "buffer_mgr.h"
 #include "dberror.h"
 #include "test_helper.h"
@@ -46,8 +46,8 @@ main (void)
   testName = "";
 
   testCreatingAndReadingDummyPages();
-  // testReadPage();
-  // testFIFO();
+   testReadPage();
+   testFIFO();
   // testLRU();
 }
 
@@ -72,9 +72,9 @@ testCreatingAndReadingDummyPages (void)
   createDummyPages(bm, 22);
   checkDummyPages(bm, 20);
   // 
-  createDummyPages(bm, 10000);
-  checkDummyPages(bm, 9997);
-  // 
+//  createDummyPages(bm, 10000);
+//  checkDummyPages(bm, 9997);
+  //
   // CHECK(destroyPageFile("testbuffer.bin"));
 
   free(bm);

@@ -9,7 +9,7 @@ typedef struct Page_Frame {
   int fix_count;
   bool is_dirty;
   BM_PageHandle *pageHandle;
-  
+  int lastUsed;
   struct Page_Frame *prev;
   struct Page_Frame *next;
 } Page_Frame;
@@ -21,6 +21,7 @@ typedef struct Queue {
   int q_capacity;
   int readIO;
   int writeIO;
+  int lru_lastUsed;
 } Queue;
 
 

@@ -97,6 +97,7 @@ int isPoolFull(BM_BufferPool *bm) {
   }
 }
 RC writeToDisk(BM_BufferPool *bm, BM_PageHandle *page) {
+  printf("data written is %s\n", page->data);
   SM_FileHandle fh;
   openPageFile(bm->pageFile, &fh);
   SM_PageHandle ph;

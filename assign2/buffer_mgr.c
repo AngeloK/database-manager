@@ -76,7 +76,6 @@ RC forceFlushPool(BM_BufferPool *const bm) {
 
 RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page, 
 	    const PageNumber pageNum) {
-
 	// pageNum is found in mapping table.
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 	if (bs->mapping[pageNum]) {
@@ -84,6 +83,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		page->data = (bs->mapping[pageNum])->pageHandle->data;
 		return RC_OK;
 	}
+	Queue *pool = bs->pool;
 	
 	// BM_PageHandle *loadedPage = loadFromPageFile(bm->pageFile, pageNum);
 	
@@ -97,14 +97,16 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	
 	if (isPoolFull(bm)) {
+		printf("it's full\n");
 		if (bm->strategy == RS_FIFO) {
 			replaceByFIFO(bm, removed, added);
 		}
-		// if (repacement(bm, removed, added));
-		//ReplacementStrategy.
+		if (bm->strategy == RS_LFU) {
+			// LRU;
+		}
+		return 0;
 	}
 	else {
-		Queue *pool = bs->pool;
 		
 		
 		if (pool->count == 0) {
@@ -124,30 +126,20 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 			// bs->pool->rear = added;
 			// bs->pool->q_capacity++;
 		}
-		// Add new page to the end of the pool queue
-		
-		//add pageNum to buffer pool.
-		//enqueue.
-		// printf("added is %p\n", added);
-		// printf("pool size%d\n", bs->pool->q_capacity);
-		// bs->pool->rear->next = added;
-		// added->prev = bs->pool->rear;
-		// bs->pool->rear = added;
-		// bs->pool->q_capacity++;
-		// bs->mapping[pageNum] = added;
-		// Queue *pool = bs->pool;
 	}
 	
+	// added new mapping.
+	bs->mapping[pageNum] = added;
 	
-	// if (removed->is_dirty) {
-	// 	writeToDisk(bm, removed);
-	// 	// write to disk.
-	// }
+	if (removed->is_dirty) {
+		writeToDisk(bm, removed);
+		// write to disk.
+	}
 	
 	//assinge new to pageHandle;
-	// page->pageNum = added->pageHandle->pageNum;
-	// page->data = added->pageHandle->data;
-	// return RC_OK;
+	page->pageNum = added->pageHandle->pageNum;
+	page->data = added->pageHandle->data;
+	return RC_OK;
 }
 
 

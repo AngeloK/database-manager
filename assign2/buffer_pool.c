@@ -28,7 +28,7 @@ Queue *createQueue(int capacity) {
   Queue* queue = (Queue *)malloc( sizeof( Queue ) );
 
   // The queue is empty
-  queue->lru_lastUsed = -1;
+  queue->lru_lastUsed = 0;
   queue->count = 0;
   queue->front = queue->rear = NULL;
 

@@ -105,7 +105,6 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	    const PageNumber pageNum) {
 	
 	// pageNum is found in mapping table.
-	
 	printf("## pinPage is %d\n##", pageNum);
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 	
@@ -118,21 +117,17 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	Page_Frame *added = NULL; 
 	Queue *pool = bs->pool;
 	
-
-	// printQueueElement(pool);
-	
 	// read from mapping.
 	if (bs->mapping[pageNum]) {
-		// page->pageNum = pageNum;
-		// printf("bs->mapping->pageHandle->data=%s\n", bs->mapping[pageNum]->pageHandle->data);
-		// printf("page->data %p\n", page->data);
-		// page->data = (bs->mapping[pageNum])->pageHandle->data;
 			
 		printf("found in mapping %d\n", pageNum);
 		page->data = (bs->mapping[pageNum])->pageHandle->data;
 		bs->mapping[pageNum]->fix_count++;
-		// pool->readIO++;
-		// page->data = pageNum;
+		
+		if (bm->strategy == RS_LRU) {
+			// remove from queue;
+			enQueue(bs->pool, bs->mapping[pageNum]);
+		}
 		
 		return RC_OK;
 	}
@@ -181,7 +176,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	if (bm->strategy == RS_FIFO) {
 		printf("added pageNum %d\n", added->pageHandle->pageNum);
-		replaced = Replacement(bs->pool, bs->mapping, removed, added);
+		replaced = ReplacementFIFO(bs->pool, bs->mapping, removed, added);
 		printf("replace is %d\n", replaced);
 		if (replaced != -1){
 			printf("is dirty %d-%d\n", bs->mapping[replaced]->is_dirty, replaced);
@@ -345,19 +340,13 @@ bool *getDirtyFlags (BM_BufferPool *const bm)
 		}
 	}
 	else  {
-		// while (temp) {
-		// 	// printf("temp index is %d value is %d address is %p\n", temp->index, temp->is_dirty, temp);
-		// 	// dirtyFlags[temp->index] = temp->is_dirty;
-		// 	dirtyFlags[temp->index] = mapping[temp->pageHandle->pageNum]->is_dirty;
-		// 	temp = temp->next;
-		// 	i--;
-		// }
-		printQueueElement(pool);
-		printf("front next is %d\n", pool->front->next->is_dirty);
-		printf("rear is %d\n", pool->rear->is_dirty);
-		dirtyFlags[pool->front->index] = pool->front->is_dirty;
-		dirtyFlags[pool->front->next->index] = pool->front->next->is_dirty;
-		dirtyFlags[pool->rear->index] = pool->rear->is_dirty;
+		
+			printQueueElement(pool);
+			printf("front next is %d\n", pool->front->next->is_dirty);
+			printf("rear is %d\n", pool->rear->is_dirty);
+			dirtyFlags[pool->front->index] = pool->front->is_dirty;
+			dirtyFlags[pool->front->next->index] = pool->front->next->is_dirty;
+			dirtyFlags[pool->rear->index] = pool->rear->is_dirty;
 		}
 
 		printf("dirtyFlags[1] = %d\n", dirtyFlags[1]);

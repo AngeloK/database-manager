@@ -224,7 +224,7 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
 // }
 
 
-int Replacement(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added){
+int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added){
     // If all frames are full, remove the page at the rear
     printf("queue count is %d\n", queue->count);
     if (queue->count == queue->q_capacity){
@@ -243,6 +243,30 @@ int Replacement(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Fr
       printQueueElement(queue);
     }
     return -1;
+}
+
+
+int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added) {
+  
+    printf("queue count is %d\n", queue->count);
+    
+    if (queue->count == queue->q_capacity){
+      
+      int replaced;
+      enQueue(queue, added);
+      replaced = deQueue(queue);
+      int index = mapping[replaced]->index;
+      added->index = index;
+      return replaced;
+    }
+    
+    else {
+      printQueueElement(queue);
+      enQueue(queue, added);
+      printQueueElement(queue);
+    }
+    return -1;  
+  
 }
 
 
@@ -316,6 +340,28 @@ int isRear(Queue *queue, Page_Frame *pf) {
   return 0;
 }
 
+void removeFromQueue(Queue *queue, Page_Frame *pf) {
+  if (isFront(queue, pf)){
+    printf("remove node from front, it's %d\n", pf->pageHandle->pageNum);
+    
+    queue->front = queue->front->next;
+  }
+  else if (isRear(queue, pf)){
+    printf("remove node from rear\n");
+    queue->rear = queue->rear->prev;
+  }
+  else {
+    printf("removed node from middle\n");
+    Page_Frame *temp = pf;
+    
+    temp->prev->next = pf->next;
+    temp->next->prev = pf->prev;
+    
+    free(temp);
+    
+  }
+}
+
 int deQueue( Queue *queue )
 {
   printf("queue count is %d\n", queue->count);
@@ -340,28 +386,8 @@ int deQueue( Queue *queue )
           queue->front = NULL;
           queue->rear = NULL;
       }
-      else {
-        
-        if (isFront(queue, removedPF)){
-          printf("remove node from front, it's %d\n", removedPF->pageHandle->pageNum);
-          
-          queue->front = queue->front->next;
-        }
-        else if (isRear(queue, removedPF)){
-          printf("remove node from rear\n");
-          queue->rear = queue->rear->prev;
-        }
-        else {
-          printf("removed node from middle\n");
-          Page_Frame *temp = removedPF;
-          
-          temp->prev->next = removedPF->next;
-          temp->next->prev = removedPF->prev;
-            
-          printQueueElement(queue);
-          
-        }
-      }  
+      else 
+        removeFromQueue(queue, removedPF);
       // free(temp);
       queue->count--;
       printf("removed in deQueue is %d\n", removedPF->pageHandle->pageNum  );

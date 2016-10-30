@@ -238,9 +238,7 @@ int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Pag
     }
     
     else {
-      printQueueElement(queue);
       enQueue(queue, added);
-      printQueueElement(queue);
     }
     return -1;
 }
@@ -262,10 +260,8 @@ int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page
     }
     
     else {
-      // printQueueElement(queue);
       printf("enqueue is %d\n", added->pageHandle->pageNum);
       enQueue(queue, added);
-      printQueueElement(queue);
     }
     return -1;  
   
@@ -289,6 +285,7 @@ int enQueue(Queue *queue, Page_Frame *added) {
   }
   queue->count++;
   printf("after adding new node, its index is %d\n", added->index);
+  printf("value of added node is %d\n", added->pageHandle->pageNum);
   return 1;
 }
 

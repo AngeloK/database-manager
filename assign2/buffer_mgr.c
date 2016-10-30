@@ -117,19 +117,41 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	Page_Frame *added = NULL; 
 	Queue *pool = bs->pool;
 	
+	
 	// read from mapping.
 	if (bs->mapping[pageNum]) {
 		
 		if (bm->strategy == RS_LRU){		
 				if (pool->count >1) {
+					printf("begin\n");
+					printQueueElement(pool);
+					printf("==== end\n");
 					removeFromQueue(bs->pool, bs->mapping[pageNum]);
-					enQueue(bs->pool, bs->mapping[pageNum]);
+					Page_Frame *renewed = newPageFrame(pageNum, bs->mapping[pageNum]->pageHandle);
+					
+					printf("fix count in mapping is %d\n", bs->mapping[pageNum]->fix_count);
+					int tempIdx = bs->pool->rear->index;
+					printf("rear index is %d\n", tempIdx);
+					renewed->index = tempIdx;
+					
+					bs->pool->rear->index = bs->mapping[pageNum]->index;
+					
+					
+					enQueue(bs->pool, renewed);
 					printf("bs->mapping[%d]->index= %d\n", pageNum, bs->mapping[pageNum]->index);
+					printf("rear bs->mapping[%d]->index= %d\n", pool->rear->pageHandle->pageNum, bs->mapping[pageNum]->index);
+					
+					bs->mapping[pageNum] = renewed;
+					printQueueElement(pool);
+					
 				}
 		}
-		
+		else {
+			bs->mapping[pageNum]->fix_count++;
+		}
 		page->data = (bs->mapping[pageNum])->pageHandle->data;
-		bs->mapping[pageNum]->fix_count++;
+		page->pageNum = pageNum;
+		
 		return RC_OK;
 	}
 	// read from block.
@@ -251,6 +273,8 @@ RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 	
+	printf("pageHand address is %p\n", page);
+	
 	Page_Frame *pf;
 	BM_PageHandle *ph = MAKE_PAGE_HANDLE();
 	ph->data = page->data;
@@ -261,6 +285,7 @@ RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	Queue *q = bs->pool;
 	
 	if (bs->mapping[page->pageNum]) {
+		printf("fix count before is %d\n",bs->mapping[page->pageNum]->fix_count );
 		bs->mapping[page->pageNum]->fix_count--;
 		printQueueElement(bs->pool);
 		printf("fix count after unpin is %d (page=%d)\n", bs->mapping[page->pageNum]->fix_count, page->pageNum);

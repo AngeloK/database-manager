@@ -41,6 +41,8 @@ Queue *createQueue(int capacity) {
 
   // Number of frames that can be stored in memory
   queue->q_capacity = capacity;
+  queue->readIO = 0;
+  queue->writeIO = 0;
 
   return queue;
 }
@@ -222,14 +224,16 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
 // }
 
 
-int Replacement(Queue *queue, Page_Frame *removed, Page_Frame *added){
+int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added){
     // If all frames are full, remove the page at the rear
     printf("queue count is %d\n", queue->count);
     if (queue->count == queue->q_capacity){
       
       int replaced;
-      replaced = deQueue(queue);
       enQueue(queue, added);
+      replaced = deQueue(queue);
+      int index = mapping[replaced]->index;
+      added->index = index;
       return replaced;
     }
     
@@ -242,23 +246,47 @@ int Replacement(Queue *queue, Page_Frame *removed, Page_Frame *added){
 }
 
 
+int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added) {
+  
+    printf("queue count is %d\n", queue->count);
+    
+    if (queue->count == queue->q_capacity){
+      
+      int replaced;
+      enQueue(queue, added);
+      replaced = deQueue(queue);
+      int index = mapping[replaced]->index;
+      added->index = index;
+      return replaced;
+    }
+    
+    else {
+      printQueueElement(queue);
+      enQueue(queue, added);
+      printQueueElement(queue);
+    }
+    return -1;  
+  
+}
+
+
 int enQueue(Queue *queue, Page_Frame *added) {
 
-  printf("enQueue %d\n", added->pageHandle->pageNum);
-  // Page_Frame *temp = added;
-  
   if (queue->count == 0) {
     printf("queue is empty\n");
     queue->rear = queue->front = added;
+    added->index = 0;
   }
   else {
     queue->rear->next = added;
     added->prev = queue->rear;
     queue->rear = added;
-    printf("queue front is %p\n",queue->front);
+    if (queue->count < queue->q_capacity){
+      added->index = queue->count;
+    }
   }
   queue->count++;
-  printf("after adding new node, queue count is %d\n", queue->count);
+  printf("after adding new node, its index is %d\n", added->index);
   return 1;
 }
 
@@ -267,27 +295,71 @@ int printQueueElement(Queue *queue) {
   Page_Frame *f = queue->front;
   int i;
   while(f) {
-    printf("addresss is %p, pageNum is %d is_dirty=%d\n", f, f->pageHandle->pageNum, f->is_dirty);
+    printf("addresss is %p, pageNum is %d is_dirty=%d fix_count=%d index=%d\n", f, f->pageHandle->pageNum, f->is_dirty, f->fix_count, f->index);
     f = f->next;
   }
   printf("===pool end====\n");
   return 1;
 } 
 
-int checkBufferBusy(Queue *queue) {
+Page_Frame *checkRemoved(Queue *queue) {
+  Page_Frame *removedAvaiable = NULL;
   Page_Frame *temp = queue->front;
-  int is_busy = 1; //1 true, 0 false, default is 1;
+  
   
   while(temp) {
     if (temp->fix_count == 0) {
       printf("temp check is %d, fix_count is %d\n", temp->pageHandle->pageNum, temp->fix_count);
-      is_busy = 0;
+      removedAvaiable = temp;
       break;
     }
     else
       temp = temp->next;
   }
-  return is_busy;
+  return removedAvaiable;
+}
+
+
+int isFront(Queue *queue, Page_Frame *pf) {
+  printf("queue-front is %d, pf is %d\n", queue->front->pageHandle->pageNum, pf->pageHandle->pageNum);
+  if (queue->front == pf) {
+    printf("Returned 'yes'\n");
+    return 1;
+  }
+  printf("Return 'no'");
+  return 0;
+}
+
+int isRear(Queue *queue, Page_Frame *pf) {
+  printf("queue->rear is %d, pf is %d\n", queue->rear->pageHandle->pageNum, pf->pageHandle->pageNum);
+  if (queue->rear == pf) {
+    printf("Returned 'yes'\n");
+    return 1;
+  }
+  printf("Return 'no'");
+  return 0;
+}
+
+void removeFromQueue(Queue *queue, Page_Frame *pf) {
+  if (isFront(queue, pf)){
+    printf("remove node from front, it's %d\n", pf->pageHandle->pageNum);
+    
+    queue->front = queue->front->next;
+  }
+  else if (isRear(queue, pf)){
+    printf("remove node from rear\n");
+    queue->rear = queue->rear->prev;
+  }
+  else {
+    printf("removed node from middle\n");
+    Page_Frame *temp = pf;
+    
+    temp->prev->next = pf->next;
+    temp->next->prev = pf->prev;
+    
+    free(temp);
+    
+  }
 }
 
 int deQueue( Queue *queue )
@@ -300,7 +372,9 @@ int deQueue( Queue *queue )
     
     // if the none of elements in queue has fix_count=0, 
     // then buffer pool is busy, we can not replace elements.
-    if (checkBufferBusy(queue) == 1) {
+    Page_Frame *removedPF;
+    removedPF = checkRemoved(queue);
+    if (removedPF == NULL) {
       printf("buffer is busy\n");
       return RC_BUFFER_BUSY;
     }
@@ -311,19 +385,13 @@ int deQueue( Queue *queue )
           //empty a queue.
           queue->front = NULL;
           queue->rear = NULL;
-          return removed;
       }
-        
-      // Page_Frame *temp = queue->front;
-      removed = queue->front->pageHandle->pageNum;
-      
-      // printf("temp->is_dirty= %d\n", temp->is_dirty);
-      queue->front = queue->front->next;
-      queue->count--;
-      printf("removed in deQueue is %d\n", removed);
-      
+      else 
+        removeFromQueue(queue, removedPF);
       // free(temp);
-      return removed;
+      queue->count--;
+      printf("removed in deQueue is %d\n", removedPF->pageHandle->pageNum  );
+      return removedPF->pageHandle->pageNum;
   }
 
 }

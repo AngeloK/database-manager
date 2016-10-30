@@ -178,7 +178,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	if (bm->strategy == RS_FIFO) {
 		printf("added pageNum %d\n", added->pageHandle->pageNum);
-		replaced = Replacement(bs->pool, removed, added);
+		replaced = Replacement(bs->pool, bs->mapping, removed, added);
 		printf("replace is %d\n", replaced);
 		if (replaced != -1){
 			printf("is dirty %d-%d\n", bs->mapping[replaced]->is_dirty, replaced);
@@ -194,8 +194,8 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 				CHECK(openPageFile(bm->pageFile, &fHandle));
 				CHECK(writeBlock(replaced, &fHandle, bs->mapping[replaced]->pageHandle->data));
 				// free(removed);
-				pool->writeIO++;
 				CHECK(closePageFile( &fHandle));
+				pool->writeIO++;
 				
 				bs->mapping[replaced] = NULL;
 			}
@@ -216,7 +216,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	page->data = added->pageHandle->data;
 	
 	
-	free(ph);
+	// free(ph);
 	
 	return RC_OK;
 	

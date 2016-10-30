@@ -222,14 +222,16 @@ int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
 // }
 
 
-int Replacement(Queue *queue, Page_Frame *removed, Page_Frame *added){
+int Replacement(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added){
     // If all frames are full, remove the page at the rear
     printf("queue count is %d\n", queue->count);
     if (queue->count == queue->q_capacity){
       
       int replaced;
-      replaced = deQueue(queue);
       enQueue(queue, added);
+      replaced = deQueue(queue);
+      int index = mapping[replaced]->index;
+      added->index = index;
       return replaced;
     }
     
@@ -244,21 +246,21 @@ int Replacement(Queue *queue, Page_Frame *removed, Page_Frame *added){
 
 int enQueue(Queue *queue, Page_Frame *added) {
 
-  printf("enQueue %d\n", added->pageHandle->pageNum);
-  // Page_Frame *temp = added;
-  
   if (queue->count == 0) {
     printf("queue is empty\n");
     queue->rear = queue->front = added;
+    added->index = 0;
   }
   else {
     queue->rear->next = added;
     added->prev = queue->rear;
     queue->rear = added;
-    printf("queue front is %p\n",queue->front);
+    if (queue->count < queue->q_capacity){
+      added->index = queue->count;
+    }
   }
   queue->count++;
-  printf("after adding new node, queue count is %d\n", queue->count);
+  printf("after adding new node, its index is %d\n", added->index);
   return 1;
 }
 

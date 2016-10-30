@@ -269,7 +269,7 @@ int printQueueElement(Queue *queue) {
   Page_Frame *f = queue->front;
   int i;
   while(f) {
-    printf("addresss is %p, pageNum is %d is_dirty=%d\n", f, f->pageHandle->pageNum, f->is_dirty);
+    printf("addresss is %p, pageNum is %d is_dirty=%d fix_count=%d \n", f, f->pageHandle->pageNum, f->is_dirty, f->fix_count);
     f = f->next;
   }
   printf("===pool end====\n");

@@ -37,7 +37,7 @@ static void checkDummyPages(BM_BufferPool *bm, int num);
 static void testReadPage (void);
 
 static void testFIFO (void);
-static void testLRU (void);
+// static void testLRU (void);
 
 // main method
 int 
@@ -46,9 +46,9 @@ main (void)
   initStorageManager();
   testName = "";
 
-  testCreatingAndReadingDummyPages();
-  testReadPage();
-  // testFIFO();
+  // testCreatingAndReadingDummyPages();
+  // testReadPage();
+  testFIFO();
   // testLRU();
 }
 

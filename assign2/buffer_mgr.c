@@ -129,6 +129,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 			
 		printf("found in mapping %d\n", pageNum);
 		page->data = (bs->mapping[pageNum])->pageHandle->data;
+		bs->mapping[pageNum]->fix_count++;
 		// page->data = pageNum;
 		
 		return RC_OK;
@@ -262,6 +263,7 @@ RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	
 	if (bs->mapping[page->pageNum]) {
 		bs->mapping[page->pageNum]->fix_count--;
+		printQueueElement(bs->pool);
 		printf("fix count after unpin is %d (page=%d)\n", bs->mapping[page->pageNum]->fix_count, page->pageNum);
 		return RC_OK;
 	} 
@@ -281,15 +283,25 @@ PageNumber *getFrameContents (BM_BufferPool *const bm) {
 	printQueueElement(pool);
 	
 	int i=0;
-	while(temp!= NULL){		
+	if (pool->count < pool->q_capacity){	
+		while(temp!= NULL){		
 	    arrnumP1[i] = temp->pageHandle->pageNum;
 			temp = temp->next;
 			i++;
-  }
-	
-	int idx;
-	for (idx = i; idx < pool->q_capacity; idx++) {
-		arrnumP1[idx] = NO_PAGE;
+	  }
+		
+		int idx;
+		for (idx = i; idx < pool->q_capacity; idx++) {
+			arrnumP1[idx] = NO_PAGE;
+		}
+	}	
+	else  {
+		temp = pool->front;
+		while (temp) {
+			arrnumP1[temp->index] = temp->pageHandle->pageNum;
+			temp = temp->next;
+		}
+		
 	}
 	return arrnumP1;
 }
@@ -298,43 +310,80 @@ PageNumber *getFrameContents (BM_BufferPool *const bm) {
 bool *getDirtyFlags (BM_BufferPool *const bm)
 {
   int index = 0;
-  Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
-  Queue *q = md -> pool;
-  bool *count = (bool *)malloc(sizeof(bool)*bm->numPages);
+  Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
+  Queue *q = bs -> pool;
+  bool *dirtyFlags = (bool *)malloc(sizeof(bool)*bm->numPages);
+	Queue *pool = bs->pool;
   Page_Frame *temp = q->front;
 	
-  while(temp!=NULL){
-		count[index++]=temp->is_dirty;
-		temp = temp->next;
-  }
-
- return count;
+	int i=0;
+	if (pool->count < pool->q_capacity){	
+		while(temp!= NULL){		
+	    dirtyFlags[i] = temp->is_dirty;
+			temp = temp->next;
+			i++;
+	  }
+		
+		int idx;
+		for (idx = i; idx < pool->q_capacity; idx++) {
+			dirtyFlags[idx] = false;
+		}
+	}	
+	else  {
+		printf("getDirtyFlags\n");
+		printQueueElement(pool);
+		printf("======\n");
+		temp = pool->front;
+		while (temp) {
+			printf("index is \n", temp->index);
+			dirtyFlags[temp->index] = temp->is_dirty;
+			temp = temp->next;
+		}
+	}
+ return dirtyFlags;
 }
 
 int *getFixCounts (BM_BufferPool *const bm)
 {
   int index = 0;
-  Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
-  Queue *q = md -> pool;
-  int *count = (int *)malloc(sizeof(int)*bm->numPages);
-  Page_Frame *temp = q->front;
-    while(temp!=NULL){
-	count[index++]=temp-> fix_count;
-	temp = temp->next;
-  }
-  return count;
+  Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
+  int *fixCount = (int *)malloc(sizeof(int)*bm->numPages);
+	Queue *pool = bs->pool;
+  Page_Frame *temp = pool->front;
+	
+	int i=0;
+	if (pool->count < pool->q_capacity){	
+		while(temp!= NULL){		
+	    fixCount[i] = temp->fix_count;
+			temp = temp->next;
+			i++;
+	  }
+		
+		int idx;
+		for (idx = i; idx < pool->q_capacity; idx++) {
+			fixCount[idx] = 0;
+		}
+	}	
+	else  {
+		temp = pool->front;
+		while (temp) {
+			fixCount[temp->index] = temp->fix_count;
+			temp = temp->next;
+		}
+	}
+ return fixCount;
 }
 
 int getNumReadIO (BM_BufferPool *const bm)
 {
-  Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
-  Queue *q = md -> pool;
-  return q-> readIO;
+  Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
+  Queue *pool = bs -> pool;
+  return pool->readIO;
 }
 
 int getNumWriteIO (BM_BufferPool *const bm)
 {
-  Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
-  Queue *q = md -> pool;
-  return q-> writeIO;
+  Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
+  Queue *pool = bs -> pool;
+  return pool->writeIO;
 }

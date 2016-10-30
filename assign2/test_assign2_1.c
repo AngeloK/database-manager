@@ -46,9 +46,9 @@ main (void)
   initStorageManager();
   testName = "";
 
-  testCreatingAndReadingDummyPages();
+  // testCreatingAndReadingDummyPages();
   // testReadPage();
-  // testFIFO();
+  testFIFO();
   // testLRU();
 }
 
@@ -76,7 +76,7 @@ testCreatingAndReadingDummyPages (void)
   
 
   createDummyPages(bm, 22);
-  // checkDummyPages(bm, 20);
+  checkDummyPages(bm, 20);
   // 
   // createDummyPages(bm, 10000);
   // checkDummyPages(bm, 10000);

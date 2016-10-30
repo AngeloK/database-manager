@@ -216,7 +216,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	page->data = added->pageHandle->data;
 	
 	
-	free(ph);
+	// free(ph);
 	
 	return RC_OK;
 	

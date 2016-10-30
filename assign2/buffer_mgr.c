@@ -119,16 +119,17 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	// read from mapping.
 	if (bs->mapping[pageNum]) {
-			
-		printf("found in mapping %d\n", pageNum);
-		page->data = (bs->mapping[pageNum])->pageHandle->data;
-		bs->mapping[pageNum]->fix_count++;
 		
-		if (bm->strategy == RS_LRU) {
-			// remove from queue;
-			enQueue(bs->pool, bs->mapping[pageNum]);
+		if (bm->strategy == RS_LRU){		
+				if (pool->count >1) {
+					removeFromQueue(bs->pool, bs->mapping[pageNum]);
+					enQueue(bs->pool, bs->mapping[pageNum]);
+					printf("bs->mapping[%d]->index= %d\n", pageNum, bs->mapping[pageNum]->index);
+				}
 		}
 		
+		page->data = (bs->mapping[pageNum])->pageHandle->data;
+		bs->mapping[pageNum]->fix_count++;
 		return RC_OK;
 	}
 	// read from block.
@@ -173,55 +174,47 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	// pageNum is not found
 	
+	printf("added pageNum %d\n", added->pageHandle->pageNum);
 	
 	if (bm->strategy == RS_FIFO) {
-		printf("added pageNum %d\n", added->pageHandle->pageNum);
 		replaced = ReplacementFIFO(bs->pool, bs->mapping, removed, added);
-		printf("replace is %d\n", replaced);
-		if (replaced != -1){
-			printf("is dirty %d-%d\n", bs->mapping[replaced]->is_dirty, replaced);
-			if ((bs->mapping[replaced])->is_dirty){
-				printf("removed is %d\n", replaced);
-				printf("goes here is =1\n");
-				
-				// printf("we have dirty page-%d\n", removed->pageHandle->pageNum);
-				// writeToDisk(bm, removed);
-				// write to disk.
-				
-				SM_FileHandle fHandle;
-				CHECK(openPageFile(bm->pageFile, &fHandle));
-				CHECK(writeBlock(replaced, &fHandle, bs->mapping[replaced]->pageHandle->data));
-				// free(removed);
-				CHECK(closePageFile( &fHandle));
-				pool->writeIO++;
-				
-			}
-			else {
-				printf("mapping address if page %d is %p\n", bs->mapping[replaced]->is_dirty, bs->mapping[replaced]);
-				printf("not dirty\n");
-			}
+	}
+	else if (bm->strategy == RS_LRU)  {
+		replaced = ReplacementLRU(bs->pool, bs->mapping, removed, added);
+	}
+	printf("replace is %d\n", replaced);
+	if (replaced != -1){
+		printf("is dirty %d-%d\n", bs->mapping[replaced]->is_dirty, replaced);
+		if ((bs->mapping[replaced])->is_dirty){
+			printf("removed is %d\n", replaced);
+			printf("goes here is =1\n");
 			
-			//
-			if (bs->mapping[replaced]->fix_count == 0) {
-				printf("replace is %d it's removeing from mapping\n", replaced);
-				bs->mapping[replaced] = NULL;
-			}
+			// write to disk.
+			SM_FileHandle fHandle;
+			CHECK(openPageFile(bm->pageFile, &fHandle));
+			CHECK(writeBlock(replaced, &fHandle, bs->mapping[replaced]->pageHandle->data));
+			CHECK(closePageFile( &fHandle));
+			pool->writeIO++;
+			
 		}
-	}
-	else {
-		//LRU
-	}
-	
+		else {
+			printf("mapping address if page %d is %p\n", bs->mapping[replaced]->is_dirty, bs->mapping[replaced]);
+			printf("not dirty\n");
+		}
+		
+		//
+		if (bs->mapping[replaced]->fix_count == 0) {
+			printf("replace is %d it's removeing from mapping\n", replaced);
+			bs->mapping[replaced] = NULL;
+		}
+			
 	printQueueElement(pool);
 	// bs->mapping[pageNum] = added;
 	
+	}
+	
 	page->pageNum = added->pageHandle->pageNum;
 	page->data = added->pageHandle->data;
-	
-	
-	
-	
-	
 	// free(ph);
 	
 	return RC_OK;

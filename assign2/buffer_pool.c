@@ -249,6 +249,7 @@ int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Pag
 int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added) {
   
     printf("queue count is %d\n", queue->count);
+    printf("lru lru??\n");
     
     if (queue->count == queue->q_capacity){
       
@@ -261,7 +262,8 @@ int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page
     }
     
     else {
-      printQueueElement(queue);
+      // printQueueElement(queue);
+      printf("enqueue is %d\n", added->pageHandle->pageNum);
       enQueue(queue, added);
       printQueueElement(queue);
     }

@@ -3,7 +3,6 @@
 #include "buffer_mgr.h"
 #include "dberror.h"
 #include "test_helper.h"
-#include "buffer_pool.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +36,7 @@ static void checkDummyPages(BM_BufferPool *bm, int num);
 static void testReadPage (void);
 
 static void testFIFO (void);
-// static void testLRU (void);
+static void testLRU (void);
 
 // main method
 int 
@@ -46,13 +45,11 @@ main (void)
   initStorageManager();
   testName = "";
 
-  testCreatingAndReadingDummyPages();
-  testReadPage();
-  testFIFO();
-  // testLRU();
+  // testCreatingAndReadingDummyPages();
+  // testReadPage();
+  // testFIFO();
+  testLRU();
 }
-
-
 
 // create n pages with content "Page X" and read them back to check whether the content is right
 void
@@ -62,32 +59,16 @@ testCreatingAndReadingDummyPages (void)
   testName = "Creating and Reading Back Dummy Pages";
 
   CHECK(createPageFile("testbuffer.bin"));
-  
-  // SM_FileHandle fh;
-  // SM_PageHandle *ph;
-  // 
-  // ph = (char *)malloc(PAGE_SIZE);
-  // 
-  // openPageFile("testbuffer.bin", &fh);
-  // readBlock(19, &fh, ph);
-  // printf("ph is %s\n", ph);
-  
-  // print mapping.
-  Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
-  int i;
-  
 
   createDummyPages(bm, 22);
   checkDummyPages(bm, 20);
-  // 
+
   createDummyPages(bm, 10000);
   checkDummyPages(bm, 10000);
-  //
+
   CHECK(destroyPageFile("testbuffer.bin"));
-  
 
   free(bm);
-  
   TEST_DONE();
 }
 
@@ -95,22 +76,21 @@ testCreatingAndReadingDummyPages (void)
 void 
 createDummyPages(BM_BufferPool *bm, int num)
 {
-  Buffer_Storage *md = (Buffer_Storage*)bm->mgmtData;
   int i;
   BM_PageHandle *h = MAKE_PAGE_HANDLE();
 
   CHECK(initBufferPool(bm, "testbuffer.bin", 3, RS_FIFO, NULL));
+  
   for (i = 0; i < num; i++)
     {
-      printf("check pageNum %d\n", i);
       CHECK(pinPage(bm, h, i));
       sprintf(h->data, "%s-%i", "Page", h->pageNum);
       CHECK(markDirty(bm, h));
-      printf("h->pageNum=%d\n", h->pageNum);
       CHECK(unpinPage(bm,h));
     }
 
   CHECK(shutdownBufferPool(bm));
+
   free(h);
 }
 
@@ -126,6 +106,7 @@ checkDummyPages(BM_BufferPool *bm, int num)
   for (i = 0; i < num; i++)
     {
       CHECK(pinPage(bm, h, i));
+
       sprintf(expected, "%s-%i", "Page", h->pageNum);
       ASSERT_EQUALS_STRING(expected, h->data, "reading back dummy page content");
 
@@ -137,7 +118,7 @@ checkDummyPages(BM_BufferPool *bm, int num)
   free(expected);
   free(h);
 }
-// 
+
 void
 testReadPage ()
 {
@@ -166,7 +147,7 @@ testReadPage ()
 
   TEST_DONE();
 }
-// 
+
 void
 testFIFO ()
 {
@@ -207,7 +188,6 @@ testFIFO ()
       ASSERT_EQUALS_POOL(poolContents[i], bm, "check pool content");
     }
 
-  printf("first for over\n");
   // pin one page and test remainder
   i = numLinRequests;
   pinPage(bm, h, requests[i]);
@@ -222,7 +202,6 @@ testFIFO ()
       ASSERT_EQUALS_POOL(poolContents[i], bm, "check pool content");
     }
 
-  printf("secont for over\n");
   // flush buffer pool to disk
   i = numLinRequests + numChangeRequests + 1;
   h->pageNum = 4;
@@ -232,7 +211,7 @@ testFIFO ()
   i++;
   forceFlushPool(bm);
   ASSERT_EQUALS_POOL(poolContents[i],bm,"pool content after flush");
-  
+
   // check number of write IOs
   ASSERT_EQUALS_INT(3, getNumWriteIO(bm), "check number of write I/Os");
   ASSERT_EQUALS_INT(8, getNumReadIO(bm), "check number of read I/Os");
@@ -244,8 +223,8 @@ testFIFO ()
   free(h);
   TEST_DONE();
 }
-// 
-// // test the LRU page replacement strategy
+
+// test the LRU page replacement strategy
 void
 testLRU (void)
 {

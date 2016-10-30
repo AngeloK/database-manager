@@ -46,11 +46,13 @@ main (void)
   initStorageManager();
   testName = "";
 
-  // testCreatingAndReadingDummyPages();
-  // testReadPage();
+  testCreatingAndReadingDummyPages();
+  testReadPage();
   testFIFO();
   // testLRU();
 }
+
+
 
 // create n pages with content "Page X" and read them back to check whether the content is right
 void
@@ -205,6 +207,7 @@ testFIFO ()
       ASSERT_EQUALS_POOL(poolContents[i], bm, "check pool content");
     }
 
+  printf("first for over\n");
   // pin one page and test remainder
   i = numLinRequests;
   pinPage(bm, h, requests[i]);
@@ -219,6 +222,7 @@ testFIFO ()
       ASSERT_EQUALS_POOL(poolContents[i], bm, "check pool content");
     }
 
+  printf("secont for over\n");
   // flush buffer pool to disk
   i = numLinRequests + numChangeRequests + 1;
   h->pageNum = 4;

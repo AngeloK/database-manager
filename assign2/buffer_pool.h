@@ -12,6 +12,7 @@ typedef struct Page_Frame {
   int lastUsed;
   struct Page_Frame *prev;
   struct Page_Frame *next;
+  int index;
 } Page_Frame;
 
 typedef struct Queue {

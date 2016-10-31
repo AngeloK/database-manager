@@ -48,7 +48,6 @@ Page_Frame* newPageFrame(int pageNum, BM_PageHandle *page);
 int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame* add);
 int replaceByLRU (BM_BufferPool *bm, Page_Frame *remove, Page_Frame* add);
 int isPoolFull(BM_BufferPool *bm);
-int writeToDisk(BM_BufferPool *bm, BM_PageHandle *page);
 int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added);
 int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added);
 

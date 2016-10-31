@@ -1,7 +1,7 @@
 Storage Manager :
 -----------------
 
-The goal of this assignment is to implement a simple storage manager - a module that is capable of reading blocks from a file on disk into memory and writing blocks from memory to a file on disk. The storage manager deals with pages (blocks) of fixed size (PAGE_SIZE). In addition to reading and writing pages from a file, it provides methods for creating, opening, and closing files. The storage manager has to maintain several types of information for an open file: The number of total pages in the file, the current page position (for reading and writing), the file name, and a POSIX file descriptor or FILE pointer. In your implementation you should implement the interface described below. Please commit a text file README.txt that (shortly) describes the ideas behind your solution and the code structure. Comment your code!
+The goal of this assignment is to implement a buffer manager based on assignment 1
 
 Group Members:
 --------------
@@ -15,140 +15,8 @@ Group Members:
 
 4) Yongjie Kang - ykang15@hawk.iit.edu - A20349674
 
-Description of the Methods used and their implementation:
----------------------------------------------------------
 
-
-1) createPageFile()
-
-Create a new page file fileName. The initial file size should be one page. This method should fill this single page with '\0' bytes. 
-	a) Generate File Descriptor
-	b) Create a single page with '\0' bytes.
-	c) Write the single page to page file.
-	d) Close file descriptor.
-
-Return Value : RC_FILE_NOT_FOUND, if file is not found ; RC_WRITE_FAILED, if writing to   File fails, else RC_OK
-*******************************************************************************************
-2) openPageFile() 
-
-Opens an existing page file. Should return RC_FILE_NOT_FOUND if the file does not exist. The second parameter is an existing file handle. If opening the file is successful, then the fields of this file handle should be initialized with the information about the opened file. For instance, you would have to read the total number of pages that are stored in the file from disk.
-
-	a) Check if File exists.
-	b) assign current file descriptor to page file handle.
-	c) Get fileName, totalNumPages, and initialize current page
-
-Return Value : RC_FILE_NOT_FOUND, if file is not found else RC_OK
-
-*******************************************************************************************
-3) closePageFile() 
-
-Close an open page file.
-
-	a) It closes the current page file.
-
-Return Value : RC_FILE_NOT_FOUND, if file is not found else RC_OK
-*******************************************************************************************
-4) destroyPageFile()
-
-Deleted an open page file.
-
-	a) It removes the current page file.
-
-Return Value : RC_FILE_NOT_FOUND, if file is not found else RC_OK
-
-*******************************************************************************************
-5) readBlock()
-
-The method reads the pageNumth block from a file and stores its content in the memory pointed to by the memPage page handle. If the file has less than pageNum pages, the method should return RC_READ_NON_EXISTING_PAGE.
-
-	a) Check if file has less than pageNum pages.
-	b) A function pread is used. (pread is used for reading PAGE_SIZE (here is 4096) 
-	   bytes of data start from offset and assign it to memPage.Detail of this function 	   can be found here: http://pubs.opengroup.org/onlinepubs/009695399/functions/		   read.html)
-
-Return Value : RC_READ_NON_EXISTING_PAGE, if file has less than pageNum pages else RC_OK
-*******************************************************************************************
-6) readFirstBlock() 
-
-The method reads the first block of page in the file
-
-Return Value : RC_READ_NON_EXISTING_PAGE, if file has less than pageNum pages else RC_OK
-*******************************************************************************************
-
-7) getBlockPos() 
- 
-The method returns the current page position in a file
-
-Return Value : An Integer, the current page position in a file
-*******************************************************************************************
-
-8) readPreviousBlock() 
-
-The method reads the previous block of page in the file by computing an offset.
-
-Return Value : RC_READ_NON_EXISTING_PAGE, if file has less than pageNum pages else RC_OK
-
-*******************************************************************************************
-9) readCurrentBlock()
- 
-The method reads the current block of page in the file by computing an offset.
-
-Return Value : RC_READ_NON_EXISTING_PAGE, if file has less than pageNum pages else RC_OK
-
-*******************************************************************************************
-10) readNextBlock() 
-
-The method reads the next block of page in the file by computing an offset.
-
-Return Value : RC_READ_NON_EXISTING_PAGE, if file has less than pageNum pages else RC_OK
-
-*******************************************************************************************
-11) readLastBlock()  
-
-The method reads the last block of page in the file by computing an offset.
-
-Return Value : RC_READ_NON_EXISTING_PAGE, if file has less than pageNum pages else RC_OK
-
-*******************************************************************************************
-12) writeBlock()  
-
-The method Writes a page to disk using current position.
-
-	a) Check if file has less than pageNum pages
-	b) Compute Offset from where we need to begin writing
-	c) Start writing into the page from the offset
-
-Return Value : RC_READ_NON_EXISTING_PAGE, if file has less than pageNum pages, RC_WRITE_FAILED, if writing to a file failed else RC_OK
-
-*******************************************************************************************
-13) writeCurrentBlock() 
-
-The method Writes a page to disk using absolute position.
-
-	a) Check if file has less than pageNum pages
-	b) Compute Offset from where we need to begin writing
-	c) Start writing into the page from the offset
-
-Return Value : RC_READ_NON_EXISTING_PAGE, if file has less than pageNum pages, RC_WRITE_FAILED, if writing to a file failed else RC_OK
-
-*******************************************************************************************
-14) appendEmptyBlock()
-
-Increase the number of pages in the file by one. The new last page is filled with zero bytes.
-Current position is added by 1.
-	
-Return Value : RC_WRITE_FAILED, if writing to a file failed else RC_OK
-*******************************************************************************************
-15) ensureCapacity() 
-
-If the file has less than numberOfPages pages then the method increases the size to numberOfPages.
-This function will also update the total number of pages and current page position.
- 
-Return Value : RC_OK
-*******************************************************************************************
-
-
-
-How to run Storage Manager (Test Case 1 and extra test case):
+How to run Buffer Manager (Test Case):
 ------------------------------------------
 
 1) Navigate to the terminal where the Buffer Manager root folder is stored.
@@ -156,4 +24,77 @@ How to run Storage Manager (Test Case 1 and extra test case):
 2) Compile : make
 
 3) Run: ./bufferManager
+
+
+Description of the Methods used and their implementation:
+---------------------------------------------------------
+
+Buffer Manager Functions
+
+1) initBufferPool()
+
+  a) Assign values(page filename, buffer size and strategy).
+  b) create a queue based buffer pool storage space. 
+
+
+2) shutdownBufferPool()
+
+  a) Write dirty page frame to disk
+  b) free space
+  
+  
+3) forceFlushPool()
+
+  a) Loop through queue to find all dirty pages and write them to disk.
+
+4) markDirty ()
+
+  a) Mark given page frame as dirty.
+  
+4) unpinPage ()
+
+  a) Unpin a given page frame.
+  
+5) forcePage ()
+
+  a) Write page frame to disk.
+  
+6) pinPage ()
+
+  a) Pin a page based on strategy(FIFO and LRU)
+
+
+Statistics Functions
+
+1) getFrameContents()
+  a) return a array of pageNum in each buffer pool
+  
+2) getDirtyFlags()
+  a) return a array of dirty flag in each buffer pool
+  
+3) getFixCounts ()
+  a) return a array of fix count in each buffer pool
+  
+4) getNumReadIO ()
+  a) return total number of reading from page file. 
+  
+5) getNumWriteIO ()
+  a) return total number of writing from page file. 
+
+
+Strategies 
+
+1. FIFO
+Our FIFO strategy makes use for Queue's 'First in first out' property, so each time a new page frame needs to be 
+added to buffer pool, simply add it to the rear of the queue, and remove the front of the queue if a page frame 
+is being removed from buffer pool. Each operation takes O(1), which is very efficient.
+
+
+2. LRU
+
+Our LRU is also based on queue, it means the least recently used page frame can be pushed to the front of the queue.
+If there is a repeated page fame, we first remove that page frame, and then add it to the rear of the queue, 
+Each operation still take O(1).
+
+
 

@@ -1,8 +1,7 @@
-end: bufferManager1 clean
+end: bufferManager clean
 
-bufferManager1:test_assign2_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_pool.o buffer_mgr_stat.o
-	     gcc test_assign2_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_pool.o buffer_mgr_stat.o -o bufferManager1
-			 ./bufferManager1
+bufferManager:test_assign2_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_pool.o buffer_mgr_stat.o
+	     gcc -g test_assign2_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_pool.o buffer_mgr_stat.o -o bufferManager
 
 
 test_assign2_1.o :test_assign2_1.c test_helper.h dberror.h storage_mgr.h buffer_mgr.h buffer_mgr_stat.h buffer_pool.h

@@ -13,6 +13,7 @@
 
 
 
+// Init buffer storage.
 Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
   SM_FileHandle *fh;
   Queue *pool = createQueue(capacity);
@@ -67,20 +68,6 @@ int isPoolFull(BM_BufferPool *bm) {
   else{
     return 0;
   }
-}
-RC writeToDisk(BM_BufferPool *bm, BM_PageHandle *page) {
-  printf("data written is %s\n", page->data);
-  SM_FileHandle fh;
-  openPageFile(bm->pageFile, &fh);
-  SM_PageHandle ph;
-  ph = (SM_PageHandle) malloc(PAGE_SIZE);
-  if (fh.totalNumPages < page->pageNum) {
-    ensureCapacity(page->pageNum+1, &fh);
-  }
-  ph = page->data;
-  writeBlock(page->pageNum, &fh, ph);
-  closePageFile(&fh);
-  free(ph);
 }
 
 int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added){
@@ -141,6 +128,8 @@ int enQueue(Queue *queue, Page_Frame *added) {
   return 1;
 }
 
+
+// display queue items.
 int printQueueElement(Queue *queue) {
   printf("===pool====\n");
   Page_Frame *f = queue->front;
@@ -153,6 +142,10 @@ int printQueueElement(Queue *queue) {
   return 1;
 } 
 
+
+
+// check if there is remove avaliable page frames, return null if buffer pool
+// is busy.,
 Page_Frame *checkRemoved(Queue *queue) {
   Page_Frame *removedAvaiable = NULL;
   Page_Frame *temp = queue->front;
@@ -170,6 +163,7 @@ Page_Frame *checkRemoved(Queue *queue) {
 }
 
 
+// check if current page frame is the front of queue.
 int isFront(Queue *queue, Page_Frame *pf) {
   if (queue->front == pf) {
     return 1;
@@ -177,6 +171,7 @@ int isFront(Queue *queue, Page_Frame *pf) {
   return 0;
 }
 
+// check if current page frame is the rear of queue.
 int isRear(Queue *queue, Page_Frame *pf) {
   if (queue->rear == pf) {
     return 1;

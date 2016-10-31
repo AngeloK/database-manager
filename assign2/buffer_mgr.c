@@ -12,6 +12,7 @@
 #include "buffer_pool.h"
 
 
+// Init buffer manager.
 RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName, 
 		  const int numPages, ReplacementStrategy strategy, 
 		  void *stratData){
@@ -19,17 +20,25 @@ RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName,
     bm->pageFile = (char *)pageFileName;
     bm->numPages = numPages;
     bm->strategy = strategy;
+		
+		
+		// Init buffer pool.
     bm->mgmtData = (Buffer_Storage *)initBufferStorage(pageFileName, numPages);
     
   return RC_OK;
 }
 
+
+// shutdown and free memory.
 RC shutdownBufferPool(BM_BufferPool *const bm) {
 	SM_FileHandle fHandle;
   Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
   Queue *q = bs -> pool;
   CHECK(openPageFile(bm->pageFile, &fHandle))
   Page_Frame *temp = q->front; 
+	
+	
+	// Check all dirty page frame and write contents to disk.
   while(temp!=NULL){
 	if(temp-> fix_count>0){
 		return RC_CANNOT_SHUTDOWN;
@@ -39,16 +48,10 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 		temp->is_dirty = FALSE;
 		q->writeIO++;
 	}
-	// else {
-	// 	printf("left is not dirty\n");
-	// 	printf("temp is %s\n", temp->pageHandle->data);
-	// }
+	
 	temp = temp->next;
   }
   CHECK(closePageFile(&fHandle))
-  // free(q->front);
-  // free(q->rear);
-  // free(q);
 	
 	//free mapping.
 	int i;
@@ -59,8 +62,8 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
   free(bs);
   q = NULL;
   bs = NULL;
+	
 	printf("shutdown\n");
-
   return RC_OK;
 }
 
@@ -70,6 +73,7 @@ RC forceFlushPool(BM_BufferPool *const bm) {
 	Queue *q = bs -> pool;
 	CHECK(openPageFile(bm->pageFile, &fHandle))
 	Page_Frame *temp = q->front; 
+	// Loop through queue to find dirty page frames.
 	while(temp!=NULL){
 		// printf("temp->%d\n", temp->pageHandle->pageNum );
 		if(temp->is_dirty == TRUE && temp-> fix_count == 0 ){
@@ -84,12 +88,15 @@ RC forceFlushPool(BM_BufferPool *const bm) {
 	return RC_OK;
 }
 
+
 RC forcePage (BM_BufferPool *const bm, BM_PageHandle *const page) {
 	SM_FileHandle fHandle;   
 	Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
 	Queue *q = bs -> pool;
 	CHECK(openPageFile(bm->pageFile, &fHandle));
-
+	
+	// if the pageNum is greater than the total number of pages in page file,
+	// increase total number of page file.
 	ensureCapacity(page->pageNum, &fHandle);
 	writeBlock(page->pageNum, &fHandle, page->data);
 	q->writeIO++;
@@ -110,6 +117,10 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
   ph = (SM_PageHandle) malloc(PAGE_SIZE);
 	BM_PageHandle *p = MAKE_PAGE_HANDLE();
 	int replaced;
+	
+	
+	// removed : should be removed page frame.
+	// added: newly added page frame.
 	Page_Frame *removed;
 	Page_Frame *added = NULL; 
 	Queue *pool = bs->pool;
@@ -117,21 +128,14 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	// read from mapping.
 	if (bs->mapping[pageNum]) {
-		
 		if (bm->strategy == RS_LRU){		
 				if (pool->count >1) {
 					removeFromQueue(bs->pool, bs->mapping[pageNum]);
 					Page_Frame *renewed = newPageFrame(pageNum, bs->mapping[pageNum]->pageHandle);
 					
-					// printf("fix count in mapping is %d\n", bs->mapping[pageNum]->fix_count);
-					// int tempIdx = bs->pool->rear->index;
-					// printf("rear index is %d\n", tempIdx);
 					renewed->index = bs->mapping[pageNum]->index;
-					
 					enQueue(bs->pool, renewed);
-					
 					bs->mapping[pageNum] = renewed;
-					printQueueElement(pool);
 					
 				}
 		}
@@ -143,56 +147,47 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		
 		return RC_OK;
 	}
-	// read from block.
+	// read from page file.
 	else {
     openPageFile(bm->pageFile, &fh);
-    
     if (fh.totalNumPages < pageNum) {
       ensureCapacity(pageNum+1, &fh);
     }
     readBlock(pageNum, &fh, ph);
 		
-		printf("ph is %s\n", ph);
 		pool->readIO++;
 		
 		// BM_PageHandle *newPageHandle = MAKE_PAGE_HANDLE();
 		
+		
+		// assign pageNum and content to pageHandle.
 		p->pageNum = pageNum;
 		p->data = ph;
 		
 		
+		
+		// update mapping.
 		added = newPageFrame(pageNum, p);
-		
 		bs->mapping[pageNum] = added;
-		
-		
-		// free(newPageHandle);
-
-    // BM_PageHandle *pageHandle = MAKE_PAGE_HANDLE();
-    // 
-    // pageHandle->pageNum = pageNum;
-    // pageHandle->data = ph;
-    
     closePageFile(&fh);
-    // return pageHandle;
-		// p->data = ph;
-		// p->pageNum = pageNum;
 	}
-	// BM_PageHandle *loadedPage = loadFromPageFile(bm->pageFile, pageNum);
-	
-	// pageNum is not found
 	
 	
 	if (bm->strategy == RS_FIFO) {
+		// 'replaced' is the pageNum of the page which is being removed. 
 		replaced = ReplacementFIFO(bs->pool, bs->mapping, removed, added);
 	}
 	else if (bm->strategy == RS_LRU)  {
+		// 'replaced' is the pageNum of the page which is being removed. 
 		replaced = ReplacementLRU(bs->pool, bs->mapping, removed, added);
 	}
+	
+	// if replace is -1, which means buffer pool is not full, no need for replacement.
 	if (replaced != -1){
 		if ((bs->mapping[replaced])->is_dirty){
 			
-			// write to disk.
+			
+			// if repalced page frame is dirty, write content to disk. 
 			SM_FileHandle fHandle;
 			CHECK(openPageFile(bm->pageFile, &fHandle));
 			CHECK(writeBlock(replaced, &fHandle, bs->mapping[replaced]->pageHandle->data));
@@ -201,19 +196,19 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 			
 		}
 		else {
+			// not dirty.
 			printf("current page(page=%d) is not dirty\n", pageNum);
 		}
 		
-		//
+		// remove mapping of repalced page frame.
 		if (bs->mapping[replaced]->fix_count == 0) {
 			bs->mapping[replaced] = NULL;
 		}
 			
-	// printQueueElement(pool);
-	// bs->mapping[pageNum] = added;
-	
 	}
 	
+	
+	// update pageHandle.
 	page->pageNum = added->pageHandle->pageNum;
 	page->data = added->pageHandle->data;
 	
@@ -224,10 +219,9 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 
 RC markDirty(BM_BufferPool * const bm, BM_PageHandle * const page)
 {
+	// mark page frame as dirty.
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 	
-	// printf("mark as dirty is page %d\n", page->pageNum);
-	// printf("current address is %p\n", bs->mapping[page->pageNum]);
 	Page_Frame *pf;
 	BM_PageHandle *ph = MAKE_PAGE_HANDLE();
 	ph->data = page->data;
@@ -249,19 +243,17 @@ RC markDirty(BM_BufferPool * const bm, BM_PageHandle * const page)
 RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	
 	
+	// unpin a page and decrease fix_count.
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
-	
 	Page_Frame *pf;
 	BM_PageHandle *ph = MAKE_PAGE_HANDLE();
 	ph->data = page->data;
 	ph->pageNum = page->pageNum;
 	Queue *q = bs->pool;
 	
+	// find page frame from mapping, takes O(1).
 	if (bs->mapping[page->pageNum]) {
 		bs->mapping[page->pageNum]->fix_count--;
-		// if (bs->mapping[page->pageNum]->fix_count == 0)
-		//   // remove mapping.
-		// 	bs->mapping[page->pageNum] = NULL;
 		return RC_OK;
 	} 
 	else {
@@ -272,6 +264,7 @@ RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	return RC_OK;
 }
 
+// Statistics functions.
 PageNumber *getFrameContents (BM_BufferPool *const bm) {
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
   PageNumber *arrnumP1 = (PageNumber *)malloc(bm->numPages * sizeof(PageNumber));
@@ -280,6 +273,7 @@ PageNumber *getFrameContents (BM_BufferPool *const bm) {
 	printQueueElement(pool);
 	
 	int i=0;
+	// if buffer pool is not full, added "NO_PAGE" to empty buffer pool.
 	if (pool->count < pool->q_capacity){	
 		while(temp!= NULL){		
 	    arrnumP1[i] = temp->pageHandle->pageNum;
@@ -293,6 +287,7 @@ PageNumber *getFrameContents (BM_BufferPool *const bm) {
 		}
 	}	
 	else  {
+		// if buffer pool is full, loop through queue to find all dirty frames.
 		temp = pool->front;
 		while (temp) {
 			arrnumP1[temp->index] = temp->pageHandle->pageNum;
@@ -328,20 +323,16 @@ bool *getDirtyFlags (BM_BufferPool *const bm)
 		}
 	}
 	else  {
+		// loop through queue.
 		temp = pool->front;
 		while(temp!= NULL){		
 	    dirtyFlags[temp->index] = temp->is_dirty;
 			temp = temp->next;
 			i++;
 	  }
-			// dirtyFlags[pool->front->index] = pool->front->is_dirty;
-			// dirtyFlags[pool->front->next->index] = pool->front->next->is_dirty;
-			// dirtyFlags[pool->rear->index] = pool->rear->is_dirty;
-		}
+	}
 
-	// free(temp);
 	return dirtyFlags;
- // return &dirtyFlags[0];
 }
 
 int *getFixCounts (BM_BufferPool *const bm)

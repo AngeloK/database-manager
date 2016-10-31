@@ -41,13 +41,13 @@ sprintPoolContent (BM_BufferPool *const bm)
   int pos = 0;
 
   message = (char *) malloc(256 + (22 * bm->numPages));
-  Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
+  // Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
   frameContent = getFrameContents(bm);
-  printQueueElement(bs->pool);
+  // printQueueElement(bs->pool);
   dirty = getDirtyFlags(bm);
-  for (i = 0; i < 3; i++) {
-    printf("dirty[%d]=%d address is %p %p \n", i, dirty[i], &dirty[i], (&dirty+i));
-  }
+  // for (i = 0; i < 3; i++) {
+  //   printf("dirty[%d]=%d address is %p %p \n", i, dirty[i], &dirty[i], (&dirty+i));
+  // }
   fixCount = getFixCounts(bm);
 
   for (i = 0; i < bm->numPages; i++)

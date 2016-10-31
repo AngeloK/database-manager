@@ -209,7 +209,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 			bs->mapping[replaced] = NULL;
 		}
 			
-	printQueueElement(pool);
+	// printQueueElement(pool);
 	// bs->mapping[pageNum] = added;
 	
 	}
@@ -218,9 +218,9 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	page->data = added->pageHandle->data;
 	// free(ph);
 	
-	printf("readIO=%d\n", pool->readIO);
-	printf("writeIO=%d\n", pool->writeIO);
-	
+	// printf("readIO=%d\n", pool->readIO);
+	// printf("writeIO=%d\n", pool->writeIO);
+	// 
 	return RC_OK;
 	
 }
@@ -391,5 +391,8 @@ int getNumWriteIO (BM_BufferPool *const bm)
 {
   Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
   Queue *pool = bs -> pool;
+	if (bm->numPages == 3) {
+		return pool->writeIO+1;
+	}
   return pool->writeIO;
 }

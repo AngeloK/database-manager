@@ -20,7 +20,6 @@ Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
   bs = (Buffer_Storage *)malloc(sizeof(Buffer_Storage));
   bs->pool = pool;
   
-  
   //Init hash, it's important when tesing in server end.
   int i;
   for (i = 0; i < 65535; i++) {
@@ -32,37 +31,19 @@ Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
 Queue *createQueue(int capacity) {
   
   printf("queue size %d\n", capacity);
-  Queue* queue = (Queue *)malloc( sizeof( Queue ) );
+  Queue* queue = (Queue *)malloc(sizeof(Queue));
 
-  // The queue is empty
-  queue->lru_lastUsed = 0;
+  // Initialize queue as empty.
   queue->count = 0;
   queue->front = queue->rear = NULL;
 
-  // Number of frames that can be stored in memory
+  // The capacity of buffer pool. 
   queue->q_capacity = capacity;
   queue->readIO = 0;
   queue->writeIO = 0;
 
   return queue;
 }
-
-// Hash* createHash( int totalNumPages);
-// {
-//     // Allocate memory for hash
-//     Hash* hash = (Hash *) malloc( sizeof( Hash ) );
-//     hash->capacity = capacity;
-//  
-//     // Create an array of pointers for refering queue nodes
-//     hash->array = (Page_Frame **) malloc( hash->capacity * sizeof( Page_Frame* ) );
-//  
-//     // Initialize all hash entries as empty
-//     int i;
-//     for( i = 0; i < hash->capacity; ++i )
-//         hash->array[i] = NULL;
-//  
-//     return hash;
-// }
 
 Page_Frame* newPageFrame( int pageNum , BM_PageHandle *page)
 {
@@ -75,26 +56,6 @@ Page_Frame* newPageFrame( int pageNum , BM_PageHandle *page)
     temp->lastUsed = 0;
     return temp;
 }
-// 
-// Page_Frame *loadFromPageFile(char *pageFileName, PageNumber pageNum) {
-//     SM_FileHandle fh;
-//     openPageFile(pageFileName, &fh);
-//     SM_PageHandle ph;
-//     ph = (SM_PageHandle) malloc(PAGE_SIZE);
-//     
-//     if (fh.totalNumPages < pageNum) {
-//       ensureCapacity(pageNum+1, &fh);
-//     }
-//     readBlock(pageNum, &fh, ph);
-// 
-//     BM_PageHandle *pageHandle = MAKE_PAGE_HANDLE();
-//     
-//     pageHandle->pageNum = pageNum;
-//     pageHandle->data = ph;
-//     
-//     closePageFile(&fh);
-//     return pageHandle;
-// }
 
 int isPoolFull(BM_BufferPool *bm) {
   Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
@@ -122,111 +83,8 @@ RC writeToDisk(BM_BufferPool *bm, BM_PageHandle *page) {
   free(ph);
 }
 
-int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
-  Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
-  
-	// Retrieve pool queue and capacity from BufferPool
-	Queue *pool = bs->pool;
-  
-	int size = pool->q_capacity;
-	
-	// Add new page to the end of the pool queue
-	if (pool->rear != NULL) {
-		pool->rear->next = add;
-	}
-	add->prev = pool->rear;
-  // add->next = NULL;
-	pool->rear = add;
-  
-	int i = 0;
-  
-	// Initialize head to pool queue head	
-	remove = pool->front;
-	while (remove != NULL) {	
-		// Find the first in queue to have 0 fix_count
-		if (remove->fix_count == 0) {
-			if (remove->prev == NULL) {
-				pool->front = remove->next;
-			} else {
-				remove->prev->next = remove->next;
-			}
-
-			if (remove->next == NULL) {
-				pool->rear = remove->prev;
-			} else {
-				remove->next->prev = remove->prev;
-			}
-			break;
-		} 
-		remove = remove->next;
-	}
-  
-	if (remove == NULL) {
-		return -1;
-	}
-  
-  printf("remove in FIFO is %d\n", remove->pageHandle->pageNum);
-  
-	return remove->pageHandle->pageNum;
-}
-
-// int replaceByLRU (BM_BufferPool *bm, Page_Frame *remove, Page_Frame *add) {
-// 	
-// 	// Retrieve pool queue and capacity from BufferPool
-// 	Buffer_Storage *bs = (Buffer_Storage*) bm->mgmtData;
-// 	Queue *pool = bs->pool;
-// 
-// 	// Start with the front of the pool
-// 	Page_Frame *lowest = NULL;
-// 	Page_Frame *current = pool->front;
-// 	
-// 	// Search through the queue for lowest last used time
-// 	while (current != NULL) {
-// 		
-// 		if (current->fix_count > 0) { // No point proceeding. Cannot Replace
-//       current = current->next;
-// 			continue;
-// 		} else if (lowest == NULL) { // Lowest has no prior assignment
-// 			lowest = current;
-// 		} else {
-// 					
-// 			if (lowest->lastUsed < current->lastUsed) {
-// 				lowest = current;
-// 			}
-// 			current = current->next;
-// 		}
-// 	}
-// 	
-// 	if (lowest == NULL) {
-// 		return -1;
-// 	}
-
-	// Remove the lowest found time
-// 	remove = lowest;
-// 
-// 	// Put new buffer in its place
-// 	if (lowest->prev == NULL) {
-// 		pool->front = add;
-// 	} else {
-// 		lowest->prev->next = add;
-// 	}
-// 	add->prev = lowest->prev;
-// 
-// 	if (lowest->next == NULL) {
-// 		pool->rear = add;
-// 	} else {
-// 		lowest->next->prev = add;
-// 	}
-// 	add->next = lowest->next;
-// 
-//   printf("remove in LRU is %d\n", remove->pageHandle->pageNum);
-// 	return remove->pageHandle->pageNum;
-// }
-
-
 int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added){
     // If all frames are full, remove the page at the rear
-    printf("queue count is %d\n", queue->count);
     if (queue->count == queue->q_capacity){
       
       int replaced;
@@ -246,10 +104,7 @@ int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Pag
 
 int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added) {
   
-    printf("queue count is %d\n", queue->count);
-    printf("lru lru??\n");
-    
-    if (queue->count == queue->q_capacity){
+    if (queue->count >= queue->q_capacity){
       
       int replaced;
       enQueue(queue, added);
@@ -260,7 +115,6 @@ int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page
     }
     
     else {
-      printf("enqueue is %d\n", added->pageHandle->pageNum);
       enQueue(queue, added);
     }
     return -1;  
@@ -284,8 +138,6 @@ int enQueue(Queue *queue, Page_Frame *added) {
     }
   }
   queue->count++;
-  printf("after adding new node, its index is %d\n", added->index);
-  printf("value of added node is %d\n", added->pageHandle->pageNum);
   return 1;
 }
 
@@ -308,7 +160,6 @@ Page_Frame *checkRemoved(Queue *queue) {
   
   while(temp) {
     if (temp->fix_count == 0) {
-      printf("temp check is %d, fix_count is %d\n", temp->pageHandle->pageNum, temp->fix_count);
       removedAvaiable = temp;
       break;
     }
@@ -320,22 +171,16 @@ Page_Frame *checkRemoved(Queue *queue) {
 
 
 int isFront(Queue *queue, Page_Frame *pf) {
-  printf("queue-front is %d, pf is %d\n", queue->front->pageHandle->pageNum, pf->pageHandle->pageNum);
   if (queue->front == pf) {
-    printf("Returned 'yes'\n");
     return 1;
   }
-  printf("Return 'no'");
   return 0;
 }
 
 int isRear(Queue *queue, Page_Frame *pf) {
-  printf("queue->rear is %d, pf is %d\n", queue->rear->pageHandle->pageNum, pf->pageHandle->pageNum);
   if (queue->rear == pf) {
-    printf("Returned 'yes'\n");
     return 1;
   }
-  printf("Return 'no'");
   return 0;
 }
 
@@ -363,7 +208,6 @@ void removeFromQueue(Queue *queue, Page_Frame *pf) {
 
 int deQueue( Queue *queue )
 {
-  printf("queue count is %d\n", queue->count);
     int removed;
     // queue is empty.
     if(queue->count == 0)
@@ -389,7 +233,6 @@ int deQueue( Queue *queue )
         removeFromQueue(queue, removedPF);
       // free(temp);
       queue->count--;
-      printf("removed in deQueue is %d\n", removedPF->pageHandle->pageNum  );
       return removedPF->pageHandle->pageNum;
   }
 

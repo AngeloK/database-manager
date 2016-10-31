@@ -19,7 +19,6 @@ RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName,
     bm->pageFile = (char *)pageFileName;
     bm->numPages = numPages;
     bm->strategy = strategy;
-		printf("numPages is %d\n", numPages);
     bm->mgmtData = (Buffer_Storage *)initBufferStorage(pageFileName, numPages);
     
   return RC_OK;
@@ -36,15 +35,14 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 		return RC_CANNOT_SHUTDOWN;
 	}
 	if(temp->is_dirty == true ){
-		printf("temp is %s\n", temp->pageHandle->data);
 		CHECK(writeBlock(temp-> pageHandle->pageNum, &fHandle, temp-> pageHandle->data));
 		temp->is_dirty = FALSE;
 		q->writeIO++;
 	}
-	else {
-		printf("left is not dirty\n");
-		printf("temp is %s\n", temp->pageHandle->data);
-	}
+	// else {
+	// 	printf("left is not dirty\n");
+	// 	printf("temp is %s\n", temp->pageHandle->data);
+	// }
 	temp = temp->next;
   }
   CHECK(closePageFile(&fHandle))
@@ -54,7 +52,6 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 	
 	//free mapping.
 	int i;
-	printf("free mapping\n");
 	for (i = 0; i < 10000; i++) {
 		bs->mapping[i] = NULL;
 	}
@@ -105,7 +102,7 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	    const PageNumber pageNum) {
 	
 	// pageNum is found in mapping table.
-	printf("## pinPage is %d\n##", pageNum);
+	printf("## pinPage is %d##\n", pageNum);
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 	
   SM_FileHandle fh;
@@ -123,23 +120,15 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		
 		if (bm->strategy == RS_LRU){		
 				if (pool->count >1) {
-					printf("begin\n");
-					printQueueElement(pool);
-					printf("==== end\n");
 					removeFromQueue(bs->pool, bs->mapping[pageNum]);
 					Page_Frame *renewed = newPageFrame(pageNum, bs->mapping[pageNum]->pageHandle);
 					
-					printf("fix count in mapping is %d\n", bs->mapping[pageNum]->fix_count);
-					int tempIdx = bs->pool->rear->index;
-					printf("rear index is %d\n", tempIdx);
-					renewed->index = tempIdx;
-					
-					bs->pool->rear->index = bs->mapping[pageNum]->index;
-					
+					// printf("fix count in mapping is %d\n", bs->mapping[pageNum]->fix_count);
+					// int tempIdx = bs->pool->rear->index;
+					// printf("rear index is %d\n", tempIdx);
+					renewed->index = bs->mapping[pageNum]->index;
 					
 					enQueue(bs->pool, renewed);
-					printf("bs->mapping[%d]->index= %d\n", pageNum, bs->mapping[pageNum]->index);
-					printf("rear bs->mapping[%d]->index= %d\n", pool->rear->pageHandle->pageNum, bs->mapping[pageNum]->index);
 					
 					bs->mapping[pageNum] = renewed;
 					printQueueElement(pool);
@@ -174,9 +163,6 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 		
 		added = newPageFrame(pageNum, p);
 		
-	
-		printf("new mapping added for pageNum %d\n", pageNum);
-		
 		bs->mapping[pageNum] = added;
 		
 		
@@ -196,7 +182,6 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	
 	// pageNum is not found
 	
-	printf("added pageNum %d\n", added->pageHandle->pageNum);
 	
 	if (bm->strategy == RS_FIFO) {
 		replaced = ReplacementFIFO(bs->pool, bs->mapping, removed, added);
@@ -204,12 +189,8 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	else if (bm->strategy == RS_LRU)  {
 		replaced = ReplacementLRU(bs->pool, bs->mapping, removed, added);
 	}
-	printf("replace is %d\n", replaced);
 	if (replaced != -1){
-		printf("is dirty %d-%d\n", bs->mapping[replaced]->is_dirty, replaced);
 		if ((bs->mapping[replaced])->is_dirty){
-			printf("removed is %d\n", replaced);
-			printf("goes here is =1\n");
 			
 			// write to disk.
 			SM_FileHandle fHandle;
@@ -220,13 +201,11 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 			
 		}
 		else {
-			printf("mapping address if page %d is %p\n", bs->mapping[replaced]->is_dirty, bs->mapping[replaced]);
-			printf("not dirty\n");
+			printf("current page(page=%d) is not dirty\n", pageNum);
 		}
 		
 		//
 		if (bs->mapping[replaced]->fix_count == 0) {
-			printf("replace is %d it's removeing from mapping\n", replaced);
 			bs->mapping[replaced] = NULL;
 		}
 			
@@ -238,6 +217,9 @@ RC pinPage (BM_BufferPool *const bm, BM_PageHandle *const page,
 	page->pageNum = added->pageHandle->pageNum;
 	page->data = added->pageHandle->data;
 	// free(ph);
+	
+	printf("readIO=%d\n", pool->readIO);
+	printf("writeIO=%d\n", pool->writeIO);
 	
 	return RC_OK;
 	
@@ -273,22 +255,14 @@ RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	
 	Buffer_Storage *bs = (Buffer_Storage *)bm->mgmtData;
 	
-	printf("pageHand address is %p\n", page);
-	
 	Page_Frame *pf;
 	BM_PageHandle *ph = MAKE_PAGE_HANDLE();
 	ph->data = page->data;
 	ph->pageNum = page->pageNum;
-	printf("unpin page num is %d\n", ph->pageNum);
-	printf("data in page is %s\n", ph->data);
-	printf("bs address %p\n", bm);
 	Queue *q = bs->pool;
 	
 	if (bs->mapping[page->pageNum]) {
-		printf("fix count before is %d\n",bs->mapping[page->pageNum]->fix_count );
 		bs->mapping[page->pageNum]->fix_count--;
-		printQueueElement(bs->pool);
-		printf("fix count after unpin is %d (page=%d)\n", bs->mapping[page->pageNum]->fix_count, page->pageNum);
 		// if (bs->mapping[page->pageNum]->fix_count == 0)
 		//   // remove mapping.
 		// 	bs->mapping[page->pageNum] = NULL;
@@ -358,26 +332,20 @@ bool *getDirtyFlags (BM_BufferPool *const bm)
 		}
 	}
 	else  {
-		
-			printQueueElement(pool);
-			printf("front next is %d\n", pool->front->next->is_dirty);
-			printf("rear is %d\n", pool->rear->is_dirty);
-			dirtyFlags[pool->front->index] = pool->front->is_dirty;
-			dirtyFlags[pool->front->next->index] = pool->front->next->is_dirty;
-			dirtyFlags[pool->rear->index] = pool->rear->is_dirty;
+		temp = pool->front;
+		while(temp!= NULL){		
+	    dirtyFlags[temp->index] = temp->is_dirty;
+			temp = temp->next;
+			i++;
+	  }
+			// dirtyFlags[pool->front->index] = pool->front->is_dirty;
+			// dirtyFlags[pool->front->next->index] = pool->front->next->is_dirty;
+			// dirtyFlags[pool->rear->index] = pool->rear->is_dirty;
 		}
 
-		printf("dirtyFlags[1] = %d\n", dirtyFlags[1]);
-	// }
-	// printQueueElement(pool);
-	int j;
-	for (j = 0; j < 3; j++) {
-		// dirtyFlags[j] = 100;
-		printf("dirtyflags[%d] %d value pointer is %p\n",j, dirtyFlags[j], &dirtyFlags[j]);
-		/* code */
-	}
 	// free(temp);
- return &dirtyFlags[0];
+	return dirtyFlags;
+ // return &dirtyFlags[0];
 }
 
 int *getFixCounts (BM_BufferPool *const bm)

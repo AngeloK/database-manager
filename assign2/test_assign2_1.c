@@ -45,10 +45,10 @@ main (void)
   initStorageManager();
   testName = "";
 
-  testCreatingAndReadingDummyPages();
-  testReadPage();
+  // testCreatingAndReadingDummyPages();
+  // testReadPage();
   testFIFO();
-  testLRU();
+  // testLRU();
 }
 
 // create n pages with content "Page X" and read them back to check whether the content is right

@@ -378,8 +378,5 @@ int getNumWriteIO (BM_BufferPool *const bm)
 {
   Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
   Queue *pool = bs -> pool;
-	if (bm->numPages == 3) {
-		return pool->writeIO+1;
-	}
   return pool->writeIO;
 }

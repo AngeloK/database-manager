@@ -258,7 +258,7 @@ RC unpinPage (BM_BufferPool *const bm, BM_PageHandle *const page){
 	} 
 	else {
 		// error.
-		printf("gose here error\n");
+		printf("goes here error\n");
 		return -1;
 	}
 	return RC_OK;
@@ -270,7 +270,6 @@ PageNumber *getFrameContents (BM_BufferPool *const bm) {
   PageNumber *arrnumP1 = (PageNumber *)malloc(bm->numPages * sizeof(PageNumber));
 	Queue *pool = bs->pool;
 	Page_Frame *temp = pool->front;
-	printQueueElement(pool);
 	
 	int i=0;
 	// if buffer pool is not full, added "NO_PAGE" to empty buffer pool.

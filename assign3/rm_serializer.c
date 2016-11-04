@@ -265,6 +265,7 @@ stringToValue(char *val)
       result->dt = DT_STRING;
       result->v.stringV = malloc(strlen(val));
       strcpy(result->v.stringV, val + 1);
+			printf("result->%s\n", result->v.stringV);
       break;
     case 'b':
       result->dt = DT_BOOL;
@@ -285,7 +286,7 @@ attrOffset (Schema *schema, int attrNum, int *result)
 {
   int offset = 0;
   int attrPos = 0;
-  
+
   for(attrPos = 0; attrPos < attrNum; attrPos++)
     switch (schema->dataTypes[attrPos])
       {
@@ -302,7 +303,7 @@ attrOffset (Schema *schema, int attrNum, int *result)
 	offset += sizeof(bool);
 	break;
       }
-  
+
   *result = offset;
   return RC_OK;
 }

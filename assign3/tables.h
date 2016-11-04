@@ -32,7 +32,7 @@ typedef struct Record
   char *data;
 } Record;
 
-// information of a table schema: its attributes, datatypes, 
+// information of a table schema: its attributes, datatypes,
 typedef struct Schema
 {
   int numAttr;
@@ -50,6 +50,14 @@ typedef struct RM_TableData
   Schema *schema;
   void *mgmtData;
 } RM_TableData;
+
+typedef struct Table_Header {
+  int pageCapacity;
+  bool isFull;
+  int count;
+  RID *ridMapping;
+} Table_Header;
+
 
 #define MAKE_STRING_VALUE(result, value)				\
   do {									\
@@ -87,5 +95,6 @@ extern char *serializeSchema(Schema *schema);
 extern char *serializeRecord(Record *record, Schema *schema);
 extern char *serializeAttr(Record *record, Schema *schema, int attrNum);
 extern char *serializeValue(Value *val);
+// extern static RC attrOffset (Schema *schema, int attrNum, int *result);
 
 #endif

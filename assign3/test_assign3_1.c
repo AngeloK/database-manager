@@ -72,8 +72,8 @@ Record *fromTestRecord (Schema *schema, TestRecord in);
 char *testName;
 
 // main method
-int 
-main (void) 
+int
+main (void)
 {
   testName = "";
 
@@ -88,12 +88,12 @@ main (void)
   return 0;
 }
 
-// ************************************************************ 
+// ************************************************************
 void
 testRecords (void)
 {
-  TestRecord expected[] = { 
-    {1, "aaaa", 3}, 
+  TestRecord expected[] = {
+    {1, "aaaa", 3},
   };
   Schema *schema;
   Record *r;
@@ -103,15 +103,12 @@ testRecords (void)
   // check attributes of created record
   schema = testSchema();
   r = fromTestRecord(schema, expected[0]);
-	puts("test");
 
   getAttr(r, schema, 0, &value);
   OP_TRUE(stringToValue("i1"), value, valueEquals, "first attr");
   freeVal(value);
 
   getAttr(r, schema, 1, &value);
-	printf("value in test is %s\n", value->v.stringV);
-	printf("value type is %d\n", value->dt);
   OP_TRUE(stringToValue("saaaa"), value, valueEquals, "second attr");
   freeVal(value);
 
@@ -129,13 +126,13 @@ testRecords (void)
   TEST_DONE();
 }
 
-// ************************************************************ 
+// ************************************************************
 void
 testCreateTableAndInsert (void)
 {
   RM_TableData *table = (RM_TableData *) malloc(sizeof(RM_TableData));
-  TestRecord inserts[] = { 
-    {1, "aaaa", 3}, 
+  TestRecord inserts[] = {
+    {1, "aaaa", 3},
     {2, "bbbb", 2},
     {3, "cccc", 1},
     {4, "dddd", 3},
@@ -152,16 +149,16 @@ testCreateTableAndInsert (void)
   testName = "test creating a new table and inserting tuples";
   schema = testSchema();
   rids = (RID *) malloc(sizeof(RID) * numInserts);
-  
+
   TEST_CHECK(initRecordManager(NULL));
   TEST_CHECK(createTable("test_table_r",schema));
   TEST_CHECK(openTable(table, "test_table_r"));
-  
+
   // insert rows into table
   for(i = 0; i < numInserts; i++)
     {
       r = fromTestRecord(schema, inserts[i]);
-      TEST_CHECK(insertRecord(table,r)); 
+      TEST_CHECK(insertRecord(table,r));
       rids[i] = r->id;
     }
 
@@ -664,7 +661,20 @@ testRecord(Schema *schema, int a, char *b, int c)
   TEST_CHECK(createRecord(&result, schema));
 
   MAKE_VALUE(value, DT_INT, a);
+	// printf("resut->data+0=%s\n", result->data);
+	// printf("resut->data+1=%s\n", result->data+1);
+
   TEST_CHECK(setAttr(result, schema, 0, value));
+	char *test1;
+	currentTime(test1);
+	printf("%s\n", test1);
+
+	// char *test = "hello";
+	// printf("length %d\n", strlen(test));
+	printf("size of *record %d\n", sizeof(Record));
+	printf("resut->data+0=%s\n", result->data);
+	printf("resut->data+1=%s\n", result->data+1);
+	// printf("size of int %d\n", sizeof(int));
   freeVal(value);
 
   MAKE_STRING_VALUE(value, b);
@@ -676,7 +686,7 @@ testRecord(Schema *schema, int a, char *b, int c)
   TEST_CHECK(setAttr(result, schema, 2, value));
 	printf("resut->data+8=%s\n", result->data+8);
   freeVal(value);
-	puts("testRecord here");
+	// puts("testRecord here");
 
   return result;
 }

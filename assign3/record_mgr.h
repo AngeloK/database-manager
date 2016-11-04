@@ -43,4 +43,8 @@ extern RC freeRecord (Record *record);
 extern RC getAttr (Record *record, Schema *schema, int attrNum, Value **value);
 extern RC setAttr (Record *record, Schema *schema, int attrNum, Value *value);
 
+char *generateTableInfo(RM_TableData *rel);
+int currentTime(char *buffer);
+int tableLength(RM_TableData *rel);
+
 #endif // RECORD_MGR_H

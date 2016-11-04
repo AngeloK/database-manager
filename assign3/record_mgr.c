@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #include "record_mgr.h"
 #include "storage_mgr.h"
@@ -29,9 +30,16 @@ RC shutdownRecordManager () {
 	return RC_OK;
 }
 RC createTable (char *name, Schema *schema) {
+  RM_TableData *table = (RM_TableData *) malloc(sizeof(RM_TableData));
+	
+	table->name = name;
+	table->schema = schema;
+	table->mgmtData = initTableManager(schema);
+
   SM_FileHandle fh;
   createPageFile(name);
   openPageFile(name, &fh);
+
   // insert header pages based on the schema.
   /* those pages may include
     1.schema;
@@ -155,26 +163,31 @@ RC freeSchema (Schema *schema) {
 }
 
 
+int schemaLength(Schema *schema) {
+	// get the length of record->data by add the length of each data type.
+	int schemaLength= 0;
+  int i;
+  for (i = 0; i < schema->numAttr; i++) {
+		if (schema->dataTypes[i] == DT_STRING) {
+		schemaLength+= schema->typeLength[i];
+		}
+		else {
+		schemaLength+= 4;
+		}
+  }
+	return schemaLength;
+}
+
 
 // dealing with records and attribute values
 RC createRecord (Record **record, Schema *schema) {
 	// Reference for why use double pointer here.
 	// http://stackoverflow.com/questions/5580761/why-use-double-pointer-or-why-use-pointers-to-pointers
-	int DATA_SIZE = 0;
-
-  int i;
-  for (i = 0; i < schema->numAttr; i++) {
-		if (schema->dataTypes[i] == DT_STRING) {
-		 DATA_SIZE += schema->typeLength[i];
-		}
-		else {
-		 DATA_SIZE += 4;
-		}
-  }
+	int recordLength = schemaLength(schema);
 
 	*record = (Record *)malloc(sizeof(Record));
 
-	(*record)->data = (char *)malloc(DATA_SIZE);
+	(*record)->data = (char *)malloc(recordLength);
 
   return RC_OK;
 }
@@ -234,9 +247,25 @@ RC setAttr (Record *record, Schema *schema, int attrNum, Value *value) {
 }
 
 
-RC
-attrOffset (Schema *schema, int attrNum, int *result)
-{
+// implementations
+// char *generateTableInfo(RM_TableData *rel) {
+//   VarString *result;
+//   MAKE_VARSTRING(result);
+//
+//   APPEND(result, "TABLE <%s> with <%i> tuples:\n", rel->name, getNumTuples(rel));
+//   APPEND_STRING(result, serializeSchema(rel->schema));
+//
+//   RETURN_STRING(result);
+// }
+
+
+int *tableInfoLength(RM_TableData *rel) {
+
+	return 0;
+}
+
+
+RC attrOffset (Schema *schema, int attrNum, int *result) {
   int offset = 0;
   int attrPos = 0;
 
@@ -259,4 +288,23 @@ attrOffset (Schema *schema, int attrNum, int *result)
 
   *result = offset;
   return RC_OK;
+}
+
+int currentTime(char *buffer) {
+	time_t timer;
+	char *t = (char *)malloc(19);
+	struct tm* tm_info;
+
+	time(&timer);
+	tm_info = localtime(&timer);
+
+	strftime(t, 19, "%Y-%m-%d %H:%M:%S", tm_info);
+	strcpy(buffer, t);
+	free(t);
+
+	return 0;
+}
+
+int tableLength(RM_TableData *rel) {
+
 }

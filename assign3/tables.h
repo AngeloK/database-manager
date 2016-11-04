@@ -51,12 +51,6 @@ typedef struct RM_TableData
   void *mgmtData;
 } RM_TableData;
 
-typedef struct Table_Header {
-  int pageCapacity;
-  bool isFull;
-  int count;
-  RID *ridMapping;
-} Table_Header;
 
 
 #define MAKE_STRING_VALUE(result, value)				\

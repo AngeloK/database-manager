@@ -2,4 +2,37 @@
 
 Schema_formaddt: numAttr&attrName1&length1&attr1Type&attrName2&length2&attr2Type&attrName3&length3&aattr3Type
 
+
+numAttr
+
+attrName1
+
+attr1Type
+
+length1
+
+attrName2
+
+attr2Type
+
+length2
+
+attrName3
+
+attr3Type
+
+length3
+
+
+
+typedef struct Schema
+{
+  int numAttr;
+  char **attrNames;
+  DataType *dataTypes;
+  int *typeLength;
+  int *keyAttrs;
+  int keySize;
+} Schema;
+
 Name&TableCapacity&pageCount&recordCount&LastAccessed&Schema_format

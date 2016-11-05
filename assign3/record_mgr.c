@@ -235,11 +235,14 @@ RC getAttr (Record *record, Schema *schema, int attrNum, Value **value) {
 			break;
 		case DT_BOOL:
 			(*value)->dt = DT_BOOL;
+
+			// TODO assign bool value.
 			// (*value)->v.boolV = transferTo(valueFromRecord, DT_BOOL);
 			// (*value)->v.boolV = NULL;
 			break;
 		case DT_FLOAT:
 			(*value)->dt = DT_FLOAT;
+			// TODO assign float value.
 			// (*value)->v.floatV = NULL;
 			break;
 	}
@@ -264,6 +267,7 @@ RC setAttr (Record *record, Schema *schema, int attrNum, Value *value) {
 
 }
 
+
 int currentTime(char *buffer) {
 	time_t timer;
 	char *t = (char *)malloc(19);
@@ -283,7 +287,7 @@ int currentTime(char *buffer) {
 char *generateTableInfo(RM_TableData *rel) {
   VarString *result;
   MAKE_VARSTRING(result);
-	char *t1 = (char *)malloc(19);
+	char *timer = (char *)malloc(19);
 	char *r;
 
 	// int recordLen = schemaLength(rel->schema);
@@ -312,28 +316,53 @@ char *generateTableInfo(RM_TableData *rel) {
 	APPEND_STRING(result, "&");
 
 	// lastAccessed.
-	currentTime(t1);
-	APPEND_STRING(result, t1);
+	currentTime(timer);
+	APPEND_STRING(result, timer);
 	APPEND_STRING(result, "&");
 
 	// APPEND_STRING(result, serializeSchema(rel->schema));
 
-
 	// schema->numAttr.
-	// APPEND_STRING(result, rel->schema->numAttr);
+	// APPEND_STRING(result, "%d", rel->schema->numAttr);
 	APPEND(result, "%d", 3);
 	APPEND_STRING(result, "&");
 
-	// TODO schema format
+	char *dt = {"DT_INT", "DT_STRING", "DT_BOOL", "DT_FLOAT"};
 
-  // APPEND(result, "TABLE <%s> with <%i> tuples:\n", rel->name, getNumTuples(rel));
-  // APPEND_STRING(result, serializeSchema(rel->schema));
+	int i;
+	for (i = 0; i < schema->numAttr; i++) {
+		APPEND(result, schema->attrNames[i]);
+		APPEND_STRING(result, "&");
+		switch (schema->dataTypes[i]) {
+			case DT_INT:
+				APPEND_STRING(result, "DT_INT");
+				APPEND_STRING("&");
+				APPEND_STRING("%d", 4);
+				APPEND_STRING("&");
+				break;
+			case DT_STRING:
+				APPEND_STRING(result, "DT_STRING");
+				APPEND_STRING("&");
+				APPEND_STRING("%d", schema->typeLength[i]);
+				APPEND_STRING("&");
+				break;
+			case DT_BOOL:
+				APPEND_STRING(result, "DT_BOOL");
+				APPEND_STRING("&");
+				APPEND_STRING("%d", 4);
+				APPEND_STRING("&");
+				break;
+			case DT_FLOAT:
+				APPEND_STRING(result, "DT_FLOAT");
+				APPEND_STRING("&");
+				APPEND_STRING("%d", 4);
+				APPEND_STRING("&");
+				break;
+		}
 
-	// puts(RETURN_STRING(result));
-	// printf("%s\n", RETURN_STRING(result));
+	}
   RETURN_STRING(result);
 }
-
 
 int tableInfoLength(RM_TableData *rel) {
 	int nameLen = strlen(rel->name);

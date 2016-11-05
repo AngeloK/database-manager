@@ -45,6 +45,7 @@ extern RC setAttr (Record *record, Schema *schema, int attrNum, Value *value);
 
 char *generateTableInfo(RM_TableData *rel);
 int currentTime(char *buffer);
+int tableInfoLength(RM_TableData *rel);
 int tableLength(RM_TableData *rel);
 
 #endif // RECORD_MGR_H

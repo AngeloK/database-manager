@@ -4,27 +4,30 @@
 #include "tables.h"
 #include "dberror.h"
 #include "dt.h"
+#include "buffer_mgr.h"
 
 
 typedef struct Table_Header {
-	int recordCount;
+	int tableCapacity;
 	int pageCount;
 	char *lastAccessed;
-	int maxRecords;
+	// int maxRecords;
 	int recordsPerPage;
-	int *offsets;
+	// int *offsets;
 	RID *freePointer;
+	// BM_BufferPool *bm;
 } Table_Header;
 
 
 typedef struct Page_Header {
 	int pageId;
-	bool isDeleted;
-	bool isFull;    // 1 is full.
+	bool isFull;    // true or false;
 	int freeSlot;  // -1 if the page is full.
+	int recordCount;
+	int recordCapacity;
 	// struct Page_Header *prev;
 	// struct Page_Header *next;
-	RID **mapping;
+	// RID **mapping;
 } Page_Header;
 
 //Table header functions.
@@ -32,7 +35,7 @@ RC initTableManager(Table_Header *manager, Schema *schema);
 RC readTableInfo(Table_Header *tableHeader, char *data);
 RC writeTableInfo(Table_Header *tableHeader);
 
-RC writeRecordToSlot(Table_Header *tableHeader, Record *record)
+RC writeRecordToSlot(Table_Header *tableHeader, Record *record);
 
 //page header functions.
 RC readPageInfo(Page_Header *pageHeader, char *data);

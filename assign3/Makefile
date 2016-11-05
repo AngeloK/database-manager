@@ -1,7 +1,7 @@
 end: recordManager clean
 
-recordManager:test_assign3_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_mgr_stat.o expr.o buffer_pool.o record_mgr.o rm_serializer.o table_mgr.o
-	gcc -g test_assign3_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_mgr_stat.o expr.o buffer_pool.o record_mgr.o rm_serializer.o table_mgr.o -o recordManager
+recordManager:test_assign3_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_mgr_stat.o expr.o buffer_pool.o record_mgr.o table_mgr.o
+	gcc -g test_assign3_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_mgr_stat.o expr.o buffer_pool.o record_mgr.o table_mgr.o -o recordManager
 
 test_assign3_1.o :test_assign3_1.c test_helper.h dberror.h storage_mgr.h buffer_mgr.h buffer_pool.h buffer_mgr_stat.h expr.h record_mgr.h tables.h table_mgr.h
 	gcc -c test_assign3_1.c
@@ -15,8 +15,8 @@ storage_mgr.o:storage_mgr.c storage_mgr.h
 record_mgr.o:record_mgr.c record_mgr.h
 	gcc -c record_mgr.c
 
-rm_serializer.o: rm_serializer.c
-	gcc -c rm_serializer.c
+# rm_serializer.o: rm_serializer.c
+# 	gcc -c rm_serializer.c
 
 buffer_pool.o:buffer_pool.c buffer_pool.h
 	gcc -c buffer_pool.c

@@ -11,5 +11,7 @@
 
 RC initTableManager(Table_Header *manager, Schema *schema) {
 	Table_Header *tm = (Table_Header *)malloc(sizeof(Table_Header));
+
+	// tm->
 	return RC_OK;
 }

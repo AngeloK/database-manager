@@ -11,14 +11,11 @@
 #include "storage_mgr.h"
 #include "dberror.h"
 #include "test_helper.h"
+#include "buffer_mgr.h"
 #include "buffer_pool.h"
 #include "tables.h"
 #include "expr.h"
-// #include "rm_serializer.c"
-
-
-static RC attrOffset (Schema *schema, int attrNum, int *result);
-
+#include "rm_serializer.c"
 
 // table and manager
 RC initRecordManager (void *mgmtData) {
@@ -31,14 +28,32 @@ RC shutdownRecordManager () {
 }
 RC createTable (char *name, Schema *schema) {
   RM_TableData *table = (RM_TableData *) malloc(sizeof(RM_TableData));
-	
+
 	table->name = name;
 	table->schema = schema;
 	table->mgmtData = initTableManager(schema);
 
+  BM_BufferPool *bm = MAKE_POOL();
+  BM_PageHandle *h = MAKE_PAGE_HANDLE();
   SM_FileHandle fh;
+
   createPageFile(name);
-  openPageFile(name, &fh);
+
+  initBufferPool(bm, name, 5, RS_FIFO, NULL);
+
+	// pinPage(bm, h, 1);
+	// add header data into pagefile.
+  // sprintf(h->data, "%s-%i", "Page", h->pageNum);
+	// markDirty(bm, h);
+	// unpinPage(bm, h);
+
+	// pinPage(bm, h, 2);
+	// add page header data into the first page;
+	// sprintf(->data, "", );
+	// markDirty(bm, h);
+	// unpinPage(bm, h)
+
+  // openPageFile(name, &fh);
 
   // insert header pages based on the schema.
   /* those pages may include
@@ -53,8 +68,8 @@ RC createTable (char *name, Schema *schema) {
   // Init every parameter.
   // record = 0
 
+	shutdownBufferPool(bm);
   closePageFile(&fh);
-
   return RC_OK;
 
   // here just create a table with a name.
@@ -62,6 +77,9 @@ RC createTable (char *name, Schema *schema) {
 RC openTable (RM_TableData *rel, char *name) {
   // Open a table via table name.
   rel->name = name;
+
+
+
 
   // read from table header, save all necessary info into mgmtData.
   //rel->mgmtData = ?.
@@ -246,50 +264,6 @@ RC setAttr (Record *record, Schema *schema, int attrNum, Value *value) {
 
 }
 
-
-// implementations
-// char *generateTableInfo(RM_TableData *rel) {
-//   VarString *result;
-//   MAKE_VARSTRING(result);
-//
-//   APPEND(result, "TABLE <%s> with <%i> tuples:\n", rel->name, getNumTuples(rel));
-//   APPEND_STRING(result, serializeSchema(rel->schema));
-//
-//   RETURN_STRING(result);
-// }
-
-
-int *tableInfoLength(RM_TableData *rel) {
-
-	return 0;
-}
-
-
-RC attrOffset (Schema *schema, int attrNum, int *result) {
-  int offset = 0;
-  int attrPos = 0;
-
-  for(attrPos = 0; attrPos < attrNum; attrPos++)
-    switch (schema->dataTypes[attrPos])
-      {
-      case DT_STRING:
-	offset += schema->typeLength[attrPos];
-	break;
-      case DT_INT:
-	offset += sizeof(int);
-	break;
-      case DT_FLOAT:
-	offset += sizeof(float);
-	break;
-      case DT_BOOL:
-	offset += sizeof(bool);
-	break;
-      }
-
-  *result = offset;
-  return RC_OK;
-}
-
 int currentTime(char *buffer) {
 	time_t timer;
 	char *t = (char *)malloc(19);
@@ -304,6 +278,75 @@ int currentTime(char *buffer) {
 
 	return 0;
 }
+
+// implementations
+char *generateTableInfo(RM_TableData *rel) {
+  VarString *result;
+  MAKE_VARSTRING(result);
+	char *t1 = (char *)malloc(19);
+	char *r;
+
+	// int recordLen = schemaLength(rel->schema);
+	int recordLen = 26;
+
+	// APPEND(result, "%s", rel->name);
+	APPEND(result, "%s", "Hello_World");
+
+	APPEND_STRING(result, "&");
+
+	// tableCapacity.
+	APPEND(result, "%d", 999 * (PAGE_SIZE/recordLen));
+	APPEND_STRING(result, "&");
+
+	// pageCapacity.
+	APPEND(result, "%d", PAGE_SIZE/recordLen);
+	APPEND_STRING(result, "&");
+
+	// pageCount.
+	APPEND(result, "%d", 100);
+	APPEND_STRING(result, "&");
+
+	// recordCount.
+	// APPEND(result, "%d", getNumTuples(rel));
+	APPEND(result, "%d", 150);
+	APPEND_STRING(result, "&");
+
+	// lastAccessed.
+	currentTime(t1);
+	APPEND_STRING(result, t1);
+	APPEND_STRING(result, "&");
+
+	// APPEND_STRING(result, serializeSchema(rel->schema));
+
+
+	// schema->numAttr.
+	// APPEND_STRING(result, rel->schema->numAttr);
+	APPEND(result, "%d", 3);
+	APPEND_STRING(result, "&");
+
+	// TODO schema format
+
+  // APPEND(result, "TABLE <%s> with <%i> tuples:\n", rel->name, getNumTuples(rel));
+  // APPEND_STRING(result, serializeSchema(rel->schema));
+
+	// puts(RETURN_STRING(result));
+	// printf("%s\n", RETURN_STRING(result));
+  RETURN_STRING(result);
+}
+
+
+int tableInfoLength(RM_TableData *rel) {
+	int nameLen = strlen(rel->name);
+	int maxRecordsLen = sizeof(int);
+	int lastAccessedLen = 19; // 2016-11-04 21:10:00
+	int schemaLen = schemaLength(rel->schema);
+	int recordsPerPageLen = sizeof(int);
+	int freespacePointerLen = sizeof(RID *);
+	int total = nameLen + maxRecordsLen + lastAccessedLen + schemaLen + recordsPerPageLen + freespacePointerLen;
+	return total;
+}
+
+
 
 int tableLength(RM_TableData *rel) {
 

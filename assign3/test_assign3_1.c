@@ -80,27 +80,30 @@ main (void)
 	// printf("%d\n", 100/3);
 	// printf("size of char %d\n", sizeof(char));
 	// printf("size of int %d\n", sizeof(int));
-	RM_TableData *rel;
-	char *s = generateTableInfo(rel);
-	char *token;
-	token = strtok(s, "&");
-	int i = 0;
-	while (token != NULL)
-	{
-		printf ("%d, %s\n",i, token);
-		token = strtok (NULL, "&");
-		i++;
-	}
+	// RM_TableData *rel;
+	// char *s = generateTableInfo(rel);
+	// char *token;
+	// token = strtok(s, "&");
+	// int i = 0;
+	// while (token != NULL)
+	// {
+	// 	printf ("%d, %s\n",i, token);
+	// 	token = strtok (NULL, "&");
+	// 	i++;
+	// }
 	// printf("%s\n", token);
 	// puts(s);
 
   // testInsertManyRecords();
-  testRecords();
+  // testRecords();
   // testCreateTableAndInsert();
   // testUpdateTable();
   // testScans();
   // testScansTwo();
   // testMultipleScans();
+	Schema *schema = testSchema();
+	createTable("test_table", schema);
+
 
   return 0;
 }
@@ -688,7 +691,6 @@ testRecord(Schema *schema, int a, char *b, int c)
 
 	// char *test = "hello";
 	// printf("length %d\n", strlen(test));
-	printf("size of *record %d\n", sizeof(Record));
 	printf("resut->data+0=%s\n", result->data);
 	printf("resut->data+1=%s\n", result->data+1);
 	// printf("size of int %d\n", sizeof(int));

@@ -7,11 +7,28 @@
 #include <sys/stat.h>
 
 #include "table_mgr.h"
+#include "storage_mgr.h"
+#include "record_mgr.h"
+
 
 
 RC initTableManager(Table_Header *manager, Schema *schema) {
 	Table_Header *tm = (Table_Header *)malloc(sizeof(Table_Header));
+	
+	int schemaLen = schemaLength(schema);	
 
-	// tm->
+	// bm->tableCapacity = (PAGE_FILE_CAP - 1) * 
+	tm->tableCapacity = 1000;
+	tm->pageCount = 0;
+
+	char *timer;
+	currentTime(timer);
+	tm->lastAccessed = timer;
+
+	tm->recordsPerPage = 1000;
+	tm->freePointer = NULL;
+
+	manager = tm;
+
 	return RC_OK;
 }

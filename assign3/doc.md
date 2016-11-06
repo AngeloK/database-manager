@@ -36,3 +36,8 @@ typedef struct Schema
 } Schema;
 
 Name&TableCapacity&pageCount&recordCount&LastAccessed&Schema_format
+
+
+page header;
+
+First 48 bytes reserved. 

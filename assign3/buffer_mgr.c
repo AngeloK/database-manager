@@ -23,7 +23,7 @@ RC initBufferPool(BM_BufferPool *const bm, const char *const pageFileName,
 		
 		
 		// Init buffer pool.
-    bm->mgmtData = (Buffer_Storage *)initBufferStorage(pageFileName, numPages);
+    bm->mgmtData = (Buffer_Storage *)initBufferStorage(bm->pageFile, numPages);
     
   return RC_OK;
 }
@@ -52,6 +52,7 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 	temp = temp->next;
   }
   CHECK(closePageFile(&fHandle))
+	puts("here?");
 	
 	//free mapping.
 	int i;
@@ -61,7 +62,7 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 	
   free(bs);
   q = NULL;
-  bs = NULL;
+  // bs = NULL;
 	
 	printf("shutdown\n");
   return RC_OK;
@@ -309,10 +310,10 @@ bool *getDirtyFlags (BM_BufferPool *const bm)
 	Queue *pool = bs->pool;
   Page_Frame *temp = pool->front;
 	Page_Frame **mapping = bs->mapping;
-	
+
 	int i=0;
-	if (pool->count < pool->q_capacity){	
-		while(temp!= NULL){		
+	if (pool->count < pool->q_capacity){
+		while(temp!= NULL){
 	    dirtyFlags[temp->index] = temp->is_dirty;
 			temp = temp->next;
 			i++;
@@ -325,7 +326,7 @@ bool *getDirtyFlags (BM_BufferPool *const bm)
 	else  {
 		// loop through queue.
 		temp = pool->front;
-		while(temp!= NULL){		
+		while(temp!= NULL){
 	    dirtyFlags[temp->index] = temp->is_dirty;
 			temp = temp->next;
 			i++;
@@ -342,20 +343,20 @@ int *getFixCounts (BM_BufferPool *const bm)
   int *fixCount = (int *)malloc(sizeof(int)*bm->numPages);
 	Queue *pool = bs->pool;
   Page_Frame *temp = pool->front;
-	
+
 	int i=0;
-	if (pool->count < pool->q_capacity){	
-		while(temp!= NULL){		
+	if (pool->count < pool->q_capacity){
+		while(temp!= NULL){
 	    fixCount[i] = temp->fix_count;
 			temp = temp->next;
 			i++;
 	  }
-		
+
 		int idx;
 		for (idx = i; idx < pool->q_capacity; idx++) {
 			fixCount[idx] = 0;
 		}
-	}	
+	}
 	else  {
 		temp = pool->front;
 		while (temp) {

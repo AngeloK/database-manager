@@ -16,22 +16,28 @@
 #include "tables.h"
 #include "expr.h"
 #include "rm_serializer.c"
+#include "table_mgr.h"
 
 // table and manager
 RC initRecordManager (void *mgmtData) {
+
   return RC_OK;
 }
 RC shutdownRecordManager () {
-
   //free memeory.
 	return RC_OK;
 }
 RC createTable (char *name, Schema *schema) {
   RM_TableData *table = (RM_TableData *) malloc(sizeof(RM_TableData));
+	Page_Header *pegeHeader = (Page_Header *)malloc(sizeof(Page_Header));
 
 	table->name = name;
+
+
 	table->schema = schema;
-	table->mgmtData = initTableManager(schema);
+	Table_Header *tableHeader;
+	initTableManager(tableHeader, schema);
+	table->mgmtData = tableHeader;
 
   BM_BufferPool *bm = MAKE_POOL();
   BM_PageHandle *h = MAKE_PAGE_HANDLE();
@@ -41,17 +47,29 @@ RC createTable (char *name, Schema *schema) {
 
   initBufferPool(bm, name, 5, RS_FIFO, NULL);
 
-	// pinPage(bm, h, 1);
-	// add header data into pagefile.
-  // sprintf(h->data, "%s-%i", "Page", h->pageNum);
-	// markDirty(bm, h);
-	// unpinPage(bm, h);
+	printf("%s\n", generateTableInfo(table));
 
-	// pinPage(bm, h, 2);
+	pinPage(bm, h, 1);
+	// add header data into pagefile.
+	h->data = generateTableInfo(table);
+  // sprintf(h->data, "%s-%i", "Page", h->pageNum);
+	markDirty(bm, h);
+
+	unpinPage(bm, h);
+
+	// puts(generatePageHeader(table, schema));
 	// add page header data into the first page;
+	pinPage(bm, h, 2);
+
+  // TODO replace 'null' with pageHeader.
+	h->data = generatePageHeader(table, NULL);
+	puts(h->data);
 	// sprintf(->data, "", );
-	// markDirty(bm, h);
-	// unpinPage(bm, h)
+	markDirty(bm, h);
+	unpinPage(bm, h);
+
+	shutdownBufferPool(bm);
+	free(h);
 
   // openPageFile(name, &fh);
 
@@ -270,7 +288,7 @@ RC setAttr (Record *record, Schema *schema, int attrNum, Value *value) {
 
 int currentTime(char *buffer) {
 	time_t timer;
-	char *t = (char *)malloc(19);
+	char *t = (char *)malloc(26);
 	struct tm* tm_info;
 
 	time(&timer);
@@ -287,8 +305,9 @@ int currentTime(char *buffer) {
 char *generateTableInfo(RM_TableData *rel) {
   VarString *result;
   MAKE_VARSTRING(result);
-	char *timer = (char *)malloc(19);
-	char *r;
+	Schema *schema = rel->schema;
+	char *timer = (char *)malloc(26);
+	// char *r;
 
 	// int recordLen = schemaLength(rel->schema);
 	int recordLen = 26;
@@ -327,36 +346,32 @@ char *generateTableInfo(RM_TableData *rel) {
 	APPEND(result, "%d", 3);
 	APPEND_STRING(result, "&");
 
-	char *dt = {"DT_INT", "DT_STRING", "DT_BOOL", "DT_FLOAT"};
+	char *dt[4] = {"DT_INT", "DT_STRING", "DT_BOOL", "DT_FLOAT"};
 
 	int i;
 	for (i = 0; i < schema->numAttr; i++) {
-		APPEND(result, schema->attrNames[i]);
+		APPEND_STRING(result, schema->attrNames[i]);
 		APPEND_STRING(result, "&");
 		switch (schema->dataTypes[i]) {
 			case DT_INT:
 				APPEND_STRING(result, "DT_INT");
-				APPEND_STRING("&");
-				APPEND_STRING("%d", 4);
-				APPEND_STRING("&");
+				APPEND_STRING(result, "&");
+				APPEND(result, "%d", 4);
 				break;
 			case DT_STRING:
 				APPEND_STRING(result, "DT_STRING");
-				APPEND_STRING("&");
-				APPEND_STRING("%d", schema->typeLength[i]);
-				APPEND_STRING("&");
+				APPEND_STRING(result, "&");
+				APPEND(result, "%d", schema->typeLength[i]);
 				break;
 			case DT_BOOL:
 				APPEND_STRING(result, "DT_BOOL");
-				APPEND_STRING("&");
-				APPEND_STRING("%d", 4);
-				APPEND_STRING("&");
+				APPEND_STRING(result, "&");
+				APPEND(result, "%d", 4);
 				break;
 			case DT_FLOAT:
 				APPEND_STRING(result, "DT_FLOAT");
-				APPEND_STRING("&");
-				APPEND_STRING("%d", 4);
-				APPEND_STRING("&");
+				APPEND_STRING(result, "&");
+				APPEND(result, "%d", 4);
 				break;
 		}
 
@@ -376,7 +391,25 @@ int tableInfoLength(RM_TableData *rel) {
 }
 
 
+char *generatePageHeader(RM_TableData *rel, Page_Header *pageHeader) {
+	VarString *result;
+	MAKE_VARSTRING(result);
+	// TODO Complete page header functions.
 
-int tableLength(RM_TableData *rel) {
+	// APPEND(result, "%d", pageHeader->pageId);
+	APPEND(result, "%d", 1);
+	APPEND_STRING(result, "&");
 
+	// APPEND(result, "%d", pageHeader->isFull);
+	APPEND(result, "%d", 0);
+	APPEND_STRING(result, "&");
+
+	// APPEND(result, "%d", pageHeader->recordCount);
+	APPEND(result, "%d", 100);
+	APPEND_STRING(result, "&");
+
+	// APPEND(result, "%d", pageHeader->pageCapacity);
+	APPEND(result, "%d", 1000);
+
+	RETURN_STRING(result);
 }

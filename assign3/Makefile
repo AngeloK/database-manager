@@ -35,3 +35,6 @@ buffer_mgr_stat.o:buffer_mgr_stat.c buffer_mgr_stat.h
 
 clean:
 	-rm -rf *.o
+
+run:
+	./recordManager

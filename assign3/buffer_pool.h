@@ -45,8 +45,11 @@ Queue *createQueue(int capacity);
 Hash *createHash(int totalNumPages);
 Page_Frame* newPageFrame(int pageNum, BM_PageHandle *page);
 
-int replaceByFIFO (BM_BufferPool *bm, Page_Frame *remove, Page_Frame* add);
-int replaceByLRU (BM_BufferPool *bm, Page_Frame *remove, Page_Frame* add);
+int enQueue(Queue *queue, Page_Frame *added);
+int deQueue(Queue *queue);
+int isFront(Queue *queue, Page_Frame *pf);
+void removeFromQueue(Queue *queue, Page_Frame *pf);
+int printQueueElement(Queue *queue);
 int isPoolFull(BM_BufferPool *bm);
 int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added);
 int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added);

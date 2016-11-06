@@ -10,7 +10,7 @@ typedef struct SM_FileHandle {
   char *fileName;
   int totalNumPages;
   int curPagePos;
-  void *mgmtInfo;
+  int mgmtInfo;
 } SM_FileHandle;
 
 typedef char* SM_PageHandle;

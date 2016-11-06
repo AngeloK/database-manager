@@ -16,7 +16,7 @@
 #include "tables.h"
 #include "expr.h"
 #include "rm_serializer.c"
-#include "table_mgr.h"
+// #include "table_mgr.h"
 
 // table and manager
 RC initRecordManager (void *mgmtData) {
@@ -49,7 +49,7 @@ RC createTable (char *name, Schema *schema) {
 
 	printf("%s\n", generateTableInfo(table));
 
-	pinPage(bm, h, 1);
+	pinPage(bm, h, 0);
 	// add header data into pagefile.
 	h->data = generateTableInfo(table);
   // sprintf(h->data, "%s-%i", "Page", h->pageNum);
@@ -59,7 +59,7 @@ RC createTable (char *name, Schema *schema) {
 
 	// puts(generatePageHeader(table, schema));
 	// add page header data into the first page;
-	pinPage(bm, h, 2);
+	pinPage(bm, h, 1);
 
   // TODO replace 'null' with pageHeader.
 	h->data = generatePageHeader(table, NULL);
@@ -356,7 +356,7 @@ char *generateTableInfo(RM_TableData *rel) {
 			case DT_INT:
 				APPEND_STRING(result, "DT_INT");
 				APPEND_STRING(result, "&");
-				APPEND(result, "%d", 4);
+				APPEND(result, "%d", 0);
 				break;
 			case DT_STRING:
 				APPEND_STRING(result, "DT_STRING");
@@ -366,15 +366,15 @@ char *generateTableInfo(RM_TableData *rel) {
 			case DT_BOOL:
 				APPEND_STRING(result, "DT_BOOL");
 				APPEND_STRING(result, "&");
-				APPEND(result, "%d", 4);
+				APPEND(result, "%d", 0);
 				break;
 			case DT_FLOAT:
 				APPEND_STRING(result, "DT_FLOAT");
 				APPEND_STRING(result, "&");
-				APPEND(result, "%d", 4);
+				APPEND(result, "%d", 0);
 				break;
 		}
-
+	APPEND_STRING(result, "&");
 	}
   RETURN_STRING(result);
 }
@@ -412,4 +412,118 @@ char *generatePageHeader(RM_TableData *rel, Page_Header *pageHeader) {
 	APPEND(result, "%d", 1000);
 
 	RETURN_STRING(result);
+}
+
+RC initTableManager(Table_Header *manager, Schema *schema) {
+	Table_Header *tm = (Table_Header *)malloc(sizeof(Table_Header));
+
+	int schemaLen = schemaLength(schema);
+
+	// bm->tableCapacity = (PAGE_FILE_CAP - 1) *
+	tm->tableCapacity = 1000;
+	tm->pageCount = 0;
+
+	char *timer = (char *)malloc(26);
+	currentTime(timer);
+	tm->lastAccessed = timer;
+
+	tm->recordsPerPage = 1000;
+	tm->freePointer = NULL;
+
+	manager = tm;
+
+	return RC_OK;
+}
+
+RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
+
+	RM_TableData *tempTable = (RM_TableData *)malloc(sizeof(RM_TableData));
+	Schema *schema;
+	Table_Header *tableHeader = (Table_Header *)malloc(sizeof(Table_Header));
+
+	char *tableAttrs[6];
+	char *token;
+	token = strtok(stringHeader, "&");
+	int i = 0;
+	while (token != NULL && i < 6)
+	{
+		tableAttrs[i] = token;
+		printf ("%d, %s\n",i, token);
+		token = strtok (NULL, "&");
+		i++;
+	}
+
+
+	// gererate schem from string.
+	printf("%s\n", token);
+	int numAttr = atoi(token);
+	token = strtok (NULL, "&");
+
+	char *attrNames[numAttr];
+	DataType dataTypes[numAttr];
+	int typeLength[numAttr];
+	int keyAttrs[numAttr];
+	// TODO what's 'keySize'?
+	int keySize = 1;
+	int keys[] = {0};
+	i = 0;
+
+	for (i = 0; i < numAttr; i++) {
+		int columnIdx = 0;
+
+		while (token != NULL && columnIdx < 3)
+		{
+			printf("i=%d, columnIdx=%d, token=%s\n", i, columnIdx, token);
+			switch (columnIdx) {
+				case 0:
+					attrNames[i] = token;
+					break;
+				case 1:
+					dataTypes[i] = stringToDatatype(token);
+					break;
+				case 2:
+					typeLength[i] = atoi(token);
+					break;
+			}
+			token = strtok (NULL, "&");
+			columnIdx++;
+		}
+	}
+
+	schema = createSchema(numAttr, attrNames, dataTypes, typeLength, 1, keys);
+	tempTable->name = tableAttrs[0];
+	tempTable->schema = schema;
+
+	tableHeader->tableCapacity = atoi(tableAttrs[1]);
+	tableHeader->pageCount = atoi(tableAttrs[2]);
+	tableHeader->totalRecordCount = atoi(tableAttrs[3]);
+	tableHeader->recordsPerPage = atoi(tableAttrs[4]);
+	tableHeader->lastAccessed = tableAttrs[5];
+
+	tempTable->mgmtData = tableHeader;
+
+	// printf("%s\n", serializeTableInfo(tempTable));
+
+	rel = tempTable;
+
+	return RC_OK;
+}
+
+DataType stringToDatatype(char *token) {
+	if (strcmp(token, "DT_INT") == 0) {
+		return DT_INT;
+	}
+
+	if (strcmp(token, "DT_STRING") == 0) {
+		return DT_STRING;
+	}
+
+	if (strcmp(token, "DT_BOOL") == 0) {
+		return DT_BOOL;
+	}
+
+	if (strcmp(token, "DT_FLOAT") == 0) {
+		return DT_FLOAT;
+	}
+	return -1;
 }

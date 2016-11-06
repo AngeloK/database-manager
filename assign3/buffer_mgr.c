@@ -52,7 +52,6 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 	temp = temp->next;
   }
   CHECK(closePageFile(&fHandle))
-	puts("here?");
 	
 	//free mapping.
 	int i;
@@ -60,9 +59,9 @@ RC shutdownBufferPool(BM_BufferPool *const bm) {
 		bs->mapping[i] = NULL;
 	}
 	
-  free(bs);
+  // free(bs);
   q = NULL;
-  // bs = NULL;
+  bs = NULL;
 	
 	printf("shutdown\n");
   return RC_OK;
@@ -275,18 +274,18 @@ PageNumber *getFrameContents (BM_BufferPool *const bm) {
 	
 	int i=0;
 	// if buffer pool is not full, added "NO_PAGE" to empty buffer pool.
-	if (pool->count < pool->q_capacity){	
-		while(temp!= NULL){		
+	if (pool->count < pool->q_capacity){
+		while(temp!= NULL){
 	    arrnumP1[i] = temp->pageHandle->pageNum;
 			temp = temp->next;
 			i++;
 	  }
-		
+
 		int idx;
 		for (idx = i; idx < pool->q_capacity; idx++) {
 			arrnumP1[idx] = NO_PAGE;
 		}
-	}	
+	}
 	else  {
 		// if buffer pool is full, loop through queue to find all dirty frames.
 		temp = pool->front;
@@ -294,7 +293,7 @@ PageNumber *getFrameContents (BM_BufferPool *const bm) {
 			arrnumP1[temp->index] = temp->pageHandle->pageNum;
 			temp = temp->next;
 		}
-		
+
 	}
 	free(temp);
 	return arrnumP1;

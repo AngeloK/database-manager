@@ -52,6 +52,30 @@ typedef struct RM_TableData
 } RM_TableData;
 
 
+typedef struct Table_Header {
+	int tableCapacity;
+	int pageCount;
+	char *lastAccessed;
+	int totalRecordCount;
+	// int maxRecords;
+	int recordsPerPage;
+	// int *offsets;
+	RID *freePointer;
+	// BM_BufferPool *bm;
+} Table_Header;
+
+
+typedef struct Page_Header {
+	int pageId;
+	bool isFull;    // true or false;
+	int freeSlot;  // -1 if the page is full.
+	int recordCount;
+	int recordCapacity;
+	// struct Page_Header *prev;
+	// struct Page_Header *next;
+	// RID **mapping;
+} Page_Header;
+
 
 #define MAKE_STRING_VALUE(result, value)				\
   do {									\

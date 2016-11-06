@@ -3,6 +3,7 @@
 #include "dberror.h"
 #include "expr.h"
 #include "record_mgr.h"
+#include "storage_mgr.h"
 #include "tables.h"
 #include "test_helper.h"
 
@@ -101,8 +102,20 @@ main (void)
   // testScans();
   // testScansTwo();
   // testMultipleScans();
-	Schema *schema = testSchema();
-	createTable("test_table", schema);
+	// Schema *schema = testSchema();
+	// createTable("test_table", schema);
+
+
+	SM_FileHandle fh;
+	SM_PageHandle ph;
+	ph = (SM_PageHandle) malloc(PAGE_SIZE);
+
+	openPageFile("test_table", &fh);
+	readBlock(0, &fh, ph);
+	printf("%s\n", ph);
+
+	parseTableHeader(NULL, ph);
+
 
 
   return 0;

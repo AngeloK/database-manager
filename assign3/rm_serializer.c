@@ -77,7 +77,8 @@ serializeTableInfo(RM_TableData *rel)
   VarString *result;
   MAKE_VARSTRING(result);
   
-  APPEND(result, "TABLE <%s> with <%i> tuples:\n", rel->name, getNumTuples(rel));
+  // APPEND(result, "TABLE <%s> with <%i> tuples:\n", rel->name, getNumTuples(rel));
+  APPEND(result, "TABLE <%s> with <%i> tuples:\n", rel->name, 100);
   APPEND_STRING(result, serializeSchema(rel->schema));
   
   RETURN_STRING(result);  
@@ -285,7 +286,7 @@ attrOffset (Schema *schema, int attrNum, int *result)
 {
   int offset = 0;
   int attrPos = 0;
-  
+
   for(attrPos = 0; attrPos < attrNum; attrPos++)
     switch (schema->dataTypes[attrPos])
       {

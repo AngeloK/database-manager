@@ -4,7 +4,7 @@
 #include "dberror.h"
 #include "expr.h"
 #include "tables.h"
-#include "table_mgr.h"
+// #include "table_mgr.h"
 
 // Bookkeeping for scans
 typedef struct RM_ScanHandle
@@ -44,12 +44,15 @@ extern RC freeRecord (Record *record);
 extern RC getAttr (Record *record, Schema *schema, int attrNum, Value **value);
 extern RC setAttr (Record *record, Schema *schema, int attrNum, Value *value);
 
+
+// extra table and header related functions.
+RC initTableManager(Table_Header *manager, Schema *schema);
 char *generateTableInfo(RM_TableData *rel);
 char *generatePageHeader(RM_TableData *rel, Page_Header *pageHeader);
 int currentTime(char *buffer);
 int tableInfoLength(RM_TableData *rel);
 int tableLength(RM_TableData *rel);
-
 int schemaLength(Schema *schema);
-
+RC parseTableHeader(RM_TableData *rel, char *stringHeader);
+DataType stringToDatatype(char *token);
 #endif // RECORD_MGR_H

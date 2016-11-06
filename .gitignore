@@ -43,3 +43,5 @@ test_assign.dSYM/
 testbuffer.bin
 
 .editorconfig
+
+recordManager

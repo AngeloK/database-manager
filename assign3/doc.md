@@ -35,7 +35,10 @@ typedef struct Schema
   int keySize;
 } Schema;
 
-Name&TableCapacity&pageCount&recordCount&LastAccessed&Schema_format
+
+Name&TableCapacity&recordsPerPage&pageCount&recordCount&LastAccessed&Schema_format
+
+test_table&336663&337&0&0&2016-11-06 16:05:35&3&a&DT_INT&0&b&DT_STRING&4&c&DT_INT&0&
 
 
 page header;

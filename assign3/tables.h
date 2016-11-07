@@ -57,11 +57,11 @@ typedef struct Table_Header {
 	int pageCount;
 	char *lastAccessed;
 	int totalRecordCount;
-	// int maxRecords;
 	int recordsPerPage;
-	// int *offsets;
 	RID *freePointer;
 	// BM_BufferPool *bm;
+	// int *offsets;
+	// int maxRecords;
 } Table_Header;
 
 

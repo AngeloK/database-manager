@@ -165,9 +165,9 @@ RC readBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
 	// if pageNum is greater than total number of pages in the file, return error.
 	if (pageNum > (fHandle->totalNumPages)) {
 		return RC_READ_NON_EXISTING_PAGE;
-	}	
+	}
 
-	// define offset used for finding and manipulating the particular page. 
+	// define offset used for finding and manipulating the particular page.
 	off_t offset = pageNum * PAGE_SIZE;
 
 	// pread is used for reading PAGE_SIZE (here is 4096) bytes of data start
@@ -317,7 +317,7 @@ RC writeBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
 	off_t offset = pageNum * PAGE_SIZE;
 
 	if (pwrite(md, memPage, PAGE_SIZE, offset) > 0 ) {
-		printf("write to block%s\n", memPage);
+		printf("write to block [%s]\n", memPage);
 		return RC_OK;
 	}
 	return RC_WRITE_FAILED;

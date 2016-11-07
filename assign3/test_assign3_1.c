@@ -102,19 +102,25 @@ main (void)
   // testScans();
   // testScansTwo();
   // testMultipleScans();
+
+  RM_TableData *rel = (RM_TableData *) malloc(sizeof(RM_TableData));
+
 	// Schema *schema = testSchema();
 	// createTable("test_table", schema);
+	openTable(rel, "test_table");
+	Schema *schema = rel->schema;
 
-
-	SM_FileHandle fh;
-	SM_PageHandle ph;
-	ph = (SM_PageHandle) malloc(PAGE_SIZE);
-
-	openPageFile("test_table", &fh);
-	readBlock(0, &fh, ph);
-	printf("%s\n", ph);
-
-	parseTableHeader(NULL, ph);
+	printf("numattrs = %s\n", serializeSchema(schema));
+	// printf("%s\n", serializeSchema(schema));
+	// SM_FileHandle fh;
+	// SM_PageHandle ph;
+	// ph = (SM_PageHandle) malloc(PAGE_SIZE);
+	//
+	// openPageFile("test_table", &fh);
+	// readBlock(0, &fh, ph);
+	// printf("%s\n", ph);
+	//
+	// parseTableHeader(NULL, ph);
 
 
 
@@ -694,31 +700,19 @@ testRecord(Schema *schema, int a, char *b, int c)
   TEST_CHECK(createRecord(&result, schema));
 
   MAKE_VALUE(value, DT_INT, a);
-	// printf("resut->data+0=%s\n", result->data);
-	// printf("resut->data+1=%s\n", result->data+1);
 
   TEST_CHECK(setAttr(result, schema, 0, value));
 	char *test1;
 	currentTime(test1);
-	printf("%s\n", test1);
-
-	// char *test = "hello";
-	// printf("length %d\n", strlen(test));
-	printf("resut->data+0=%s\n", result->data);
-	printf("resut->data+1=%s\n", result->data+1);
-	// printf("size of int %d\n", sizeof(int));
   freeVal(value);
 
   MAKE_STRING_VALUE(value, b);
   TEST_CHECK(setAttr(result, schema, 1, value));
-	printf("resut->data+4=%s\n", result->data+4);
   freeVal(value);
 
   MAKE_VALUE(value, DT_INT, c);
   TEST_CHECK(setAttr(result, schema, 2, value));
-	printf("resut->data+8=%s\n", result->data+8);
   freeVal(value);
-	// puts("testRecord here");
 
   return result;
 }

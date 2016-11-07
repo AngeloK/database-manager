@@ -32,10 +32,9 @@ RC createTable (char *name, Schema *schema) {
 	Page_Header *pegeHeader = (Page_Header *)malloc(sizeof(Page_Header));
 
 	table->name = name;
-
-
 	table->schema = schema;
-	Table_Header *tableHeader;
+
+	Table_Header *tableHeader = (Table_Header *)malloc(sizeof(Table_Header));
 	initTableManager(tableHeader, schema);
 	table->mgmtData = tableHeader;
 
@@ -47,24 +46,20 @@ RC createTable (char *name, Schema *schema) {
 
   initBufferPool(bm, name, 5, RS_FIFO, NULL);
 
-	printf("%s\n", generateTableInfo(table));
-
 	pinPage(bm, h, 0);
 	// add header data into pagefile.
 	h->data = generateTableInfo(table);
-  // sprintf(h->data, "%s-%i", "Page", h->pageNum);
 	markDirty(bm, h);
-
 	unpinPage(bm, h);
 
-	// puts(generatePageHeader(table, schema));
 	// add page header data into the first page;
 	pinPage(bm, h, 1);
 
   // TODO replace 'null' with pageHeader.
-	h->data = generatePageHeader(table, NULL);
-	puts(h->data);
-	// sprintf(->data, "", );
+	Page_Header *pageHeader = (Page_Header *)malloc(sizeof(Page_Header));
+
+	initPageHeader(table, pageHeader, 1);
+	h->data = generatePageHeader(table, pageHeader);
 	markDirty(bm, h);
 	unpinPage(bm, h);
 
@@ -95,16 +90,18 @@ RC createTable (char *name, Schema *schema) {
 RC openTable (RM_TableData *rel, char *name) {
   // Open a table via table name.
   rel->name = name;
+	//
+	SM_FileHandle fh;
+	SM_PageHandle ph;
+	ph = (SM_PageHandle) malloc(PAGE_SIZE);
 
+	openPageFile(name, &fh);
+	readBlock(0, &fh, ph);
 
+	rel->schema = (Schema *)malloc(sizeof(Schema));
+	parseTableHeader(rel, ph);
+	printf("schema in openTable is :%s\n", serializeSchema(rel->schema));
 
-
-  // read from table header, save all necessary info into mgmtData.
-  //rel->mgmtData = ?.
-  // the data stored in mgmtData should be decided after discussion.
-
-  // mgmtData.status = 0;
-  // closed table.
 	return RC_OK;
 }
 
@@ -119,15 +116,14 @@ RC deleteTable (char *name) {
   return RC_OK;
 }
 int getNumTuples (RM_TableData *rel) {
-  // I think here we have a pointer points to the free space, so we are able to count
-  // the pages based on the pointer.
-  // return rel->mgmtData->count;
+	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+  return tableHeader->totalRecordCount;
   return 0;
 }
 
 
 RC insertRecord (RM_TableData *rel, Record *record) {
-  // inside the record, we have the RID.
+  // if inside the record, we have the RID.
   if (record->id.page) {
     // update record based on rid;
   }
@@ -306,32 +302,33 @@ char *generateTableInfo(RM_TableData *rel) {
   VarString *result;
   MAKE_VARSTRING(result);
 	Schema *schema = rel->schema;
+	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
 	char *timer = (char *)malloc(26);
 	// char *r;
 
-	// int recordLen = schemaLength(rel->schema);
-	int recordLen = 26;
+	int recordLen = schemaLength(rel->schema);
+	// int recordLen = 26;
 
-	// APPEND(result, "%s", rel->name);
-	APPEND(result, "%s", "Hello_World");
+	APPEND(result, "%s", rel->name);
+	// APPEND(result, "%s", "Hello_World");
 
 	APPEND_STRING(result, "&");
 
 	// tableCapacity.
-	APPEND(result, "%d", 999 * (PAGE_SIZE/recordLen));
+	APPEND(result, "%d", tableHeader->tableCapacity);
 	APPEND_STRING(result, "&");
 
 	// pageCapacity.
-	APPEND(result, "%d", PAGE_SIZE/recordLen);
+	APPEND(result, "%d", tableHeader->recordsPerPage);
 	APPEND_STRING(result, "&");
 
 	// pageCount.
-	APPEND(result, "%d", 100);
+	APPEND(result, "%d", tableHeader->pageCount);
 	APPEND_STRING(result, "&");
 
 	// recordCount.
 	// APPEND(result, "%d", getNumTuples(rel));
-	APPEND(result, "%d", 150);
+	APPEND(result, "%d", tableHeader->totalRecordCount);
 	APPEND_STRING(result, "&");
 
 	// lastAccessed.
@@ -342,8 +339,8 @@ char *generateTableInfo(RM_TableData *rel) {
 	// APPEND_STRING(result, serializeSchema(rel->schema));
 
 	// schema->numAttr.
-	// APPEND_STRING(result, "%d", rel->schema->numAttr);
-	APPEND(result, "%d", 3);
+	APPEND(result, "%d", rel->schema->numAttr);
+	// APPEND(result, "%d", 3);
 	APPEND_STRING(result, "&");
 
 	char *dt[4] = {"DT_INT", "DT_STRING", "DT_BOOL", "DT_FLOAT"};
@@ -396,48 +393,44 @@ char *generatePageHeader(RM_TableData *rel, Page_Header *pageHeader) {
 	MAKE_VARSTRING(result);
 	// TODO Complete page header functions.
 
-	// APPEND(result, "%d", pageHeader->pageId);
-	APPEND(result, "%d", 1);
+	APPEND(result, "%d", pageHeader->pageId);
+	// APPEND(result, "%d", 1);
 	APPEND_STRING(result, "&");
 
-	// APPEND(result, "%d", pageHeader->isFull);
-	APPEND(result, "%d", 0);
+	APPEND(result, "%d", pageHeader->isFull);
+	// APPEND(result, "%d", 0);
 	APPEND_STRING(result, "&");
 
-	// APPEND(result, "%d", pageHeader->recordCount);
-	APPEND(result, "%d", 100);
+	APPEND(result, "%d", pageHeader->recordCount);
+	// APPEND(result, "%d", 100);
 	APPEND_STRING(result, "&");
 
-	// APPEND(result, "%d", pageHeader->pageCapacity);
-	APPEND(result, "%d", 1000);
+	APPEND(result, "%d", pageHeader->recordCapacity);
+	// APPEND(result, "%d", 1000);
 
 	RETURN_STRING(result);
 }
 
 RC initTableManager(Table_Header *manager, Schema *schema) {
-	Table_Header *tm = (Table_Header *)malloc(sizeof(Table_Header));
+	// Table_Header *tm = (Table_Header *)malloc(sizeof(Table_Header));
 
 	int schemaLen = schemaLength(schema);
 
-	// bm->tableCapacity = (PAGE_FILE_CAP - 1) *
-	tm->tableCapacity = 1000;
-	tm->pageCount = 0;
+	manager->tableCapacity = (TOTAL_PAGES - 1) * ((PAGE_SIZE - 50)/schemaLen);
+	manager->pageCount = 0;
 
 	char *timer = (char *)malloc(26);
 	currentTime(timer);
-	tm->lastAccessed = timer;
+	manager->lastAccessed = timer;
 
-	tm->recordsPerPage = 1000;
-	tm->freePointer = NULL;
-
-	manager = tm;
+	manager->recordsPerPage = (PAGE_SIZE - 50)/schemaLen;
+	manager->freePointer = NULL;
 
 	return RC_OK;
 }
 
 RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 
-	RM_TableData *tempTable = (RM_TableData *)malloc(sizeof(RM_TableData));
 	Schema *schema;
 	Table_Header *tableHeader = (Table_Header *)malloc(sizeof(Table_Header));
 
@@ -448,14 +441,12 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 	while (token != NULL && i < 6)
 	{
 		tableAttrs[i] = token;
-		printf ("%d, %s\n",i, token);
 		token = strtok (NULL, "&");
 		i++;
 	}
 
 
 	// gererate schem from string.
-	printf("%s\n", token);
 	int numAttr = atoi(token);
 	token = strtok (NULL, "&");
 
@@ -473,7 +464,6 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 
 		while (token != NULL && columnIdx < 3)
 		{
-			printf("i=%d, columnIdx=%d, token=%s\n", i, columnIdx, token);
 			switch (columnIdx) {
 				case 0:
 					attrNames[i] = token;
@@ -490,9 +480,30 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 		}
 	}
 
-	schema = createSchema(numAttr, attrNames, dataTypes, typeLength, 1, keys);
-	tempTable->name = tableAttrs[0];
-	tempTable->schema = schema;
+  char **cpNames = (char **) malloc(sizeof(char*) * numAttr);
+  DataType *cpDt = (DataType *) malloc(sizeof(DataType) * numAttr);
+  int *cpSizes = (int *) malloc(sizeof(int) * numAttr);
+  int *cpKeys = (int *) malloc(sizeof(int));
+
+  for(i = 0; i < 3; i++)
+    {
+      cpNames[i] = (char *) malloc(2);
+      strcpy(cpNames[i], attrNames[i]);
+    }
+  memcpy(cpDt, dataTypes, sizeof(DataType) * 3);
+  memcpy(cpSizes, typeLength, sizeof(int) * 3);
+  memcpy(cpKeys, keys, sizeof(int));
+
+	schema = createSchema(numAttr, cpNames, cpDt, cpSizes, 1, cpKeys);
+
+
+	rel->name = tableAttrs[0];
+	rel->schema = schema;
+	// puts("hello");
+	// printf("%s\n", "hello");
+	printf("%s", serializeSchema(rel->schema));
+	// printf("%p\n", rel->schema);
+
 
 	tableHeader->tableCapacity = atoi(tableAttrs[1]);
 	tableHeader->pageCount = atoi(tableAttrs[2]);
@@ -500,11 +511,12 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 	tableHeader->recordsPerPage = atoi(tableAttrs[4]);
 	tableHeader->lastAccessed = tableAttrs[5];
 
-	tempTable->mgmtData = tableHeader;
-
-	// printf("%s\n", serializeTableInfo(tempTable));
-
-	rel = tempTable;
+	rel->mgmtData = tableHeader;
+	// printf("schema address %p\n", schema);
+	// printf("%s\n", serializeSchema(schema));
+	// printf("%s\n", serializeSchema(rel->schema));
+	printf("[%s]\n", serializeSchema(rel->schema));
+	printf("%p\n", rel->schema->attrNames);
 
 	return RC_OK;
 }
@@ -526,4 +538,17 @@ DataType stringToDatatype(char *token) {
 		return DT_FLOAT;
 	}
 	return -1;
+}
+
+RC initPageHeader(RM_TableData *rel, Page_Header *pageHeader, int pageId) {
+	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+
+	pageHeader->pageId = pageId;
+	pageHeader->isFull = false;
+	pageHeader->freeSlot = 0;
+	pageHeader->recordCount = 0;
+	pageHeader->recordCapacity = tableHeader->recordsPerPage;
+
+	return RC_OK;
+
 }

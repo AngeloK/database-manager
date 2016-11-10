@@ -95,9 +95,9 @@ main (void)
 	// printf("%s\n", token);
 	// puts(s);
 
-  // testInsertManyRecords();
+  testInsertManyRecords();
   // testRecords();
-  testCreateTableAndInsert();
+  // testCreateTableAndInsert();
   // testUpdateTable();
   // testScans();
   // testScansTwo();
@@ -217,12 +217,12 @@ testCreateTableAndInsert (void)
   TEST_CHECK(openTable(table, "test_table_r"));
 
   // randomly retrieve records from the table and compare to inserted ones
-  for(i = 0; i < 1; i++)
+  for(i = 0; i < 1000; i++)
     {
       int pos = rand() % numInserts;
       RID rid = rids[pos];
       TEST_CHECK(getRecord(table, rid, r));
-      // ASSERT_EQUALS_RECORDS(fromTestRecord(schema, inserts[pos]), r, schema, "compare records");
+      ASSERT_EQUALS_RECORDS(fromTestRecord(schema, inserts[pos]), r, schema, "compare records");
     }
 
   TEST_CHECK(closeTable(table));

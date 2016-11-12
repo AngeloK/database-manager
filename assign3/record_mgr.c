@@ -71,3 +71,22 @@ RC freeSchema(Schema *schema)
     return RC_OK;
 }
 
+RC createRecord(Record **record, Schema *schema)
+{
+    *record = (Record *)malloc(sizeof(Record));
+    (*record)->data = (char *)malloc(PAGE_SIZE);
+    memset((*record)->data,'\0',PAGE_SIZE);
+    return RC_OK;
+}
+
+RC freeRecord(Record *record)
+{
+    free(record->data);
+    record->data = NULL;
+    free(record);
+    record = NULL;
+    return RC_OK;
+}
+
+
+

@@ -16,7 +16,7 @@ RC shutdownRecordManager()
 {
    return RC_OK;
 }
-/* Dealing with schemas
+/* Dealing with Schemas
  *
  *
  *
@@ -70,7 +70,11 @@ RC freeSchema(Schema *schema)
     schema=NULL;
     return RC_OK;
 }
-
+/* Dealing with Records
+ *
+ *
+ *
+ */
 RC createRecord(Record **record, Schema *schema)
 {
     *record = (Record *)malloc(sizeof(Record));
@@ -87,6 +91,10 @@ RC freeRecord(Record *record)
     record = NULL;
     return RC_OK;
 }
-
+/* Dealing with Attributes
+ *
+ *
+ *
+ */
 
 

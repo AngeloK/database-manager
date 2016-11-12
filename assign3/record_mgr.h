@@ -56,7 +56,7 @@ int schemaLength(Schema *schema);
 RC parseTableHeader(RM_TableData *rel, char *stringHeader);
 DataType stringToDatatype(char *token);
 RC initPageHeader(RM_TableData *rel, Page_Header *pageHeader, int pageId);
-Record *parseRecordFromString(Schema *schema, char *recordString, RID id);
+Record *deserializeRecord(Schema *schema, char *recordString, RID id);
 
 
 #endif // RECORD_MGR_H

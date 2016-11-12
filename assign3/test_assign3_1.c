@@ -95,10 +95,10 @@ main (void)
 	// printf("%s\n", token);
 	// puts(s);
 
-  testInsertManyRecords();
+  // testInsertManyRecords();
   // testRecords();
   // testCreateTableAndInsert();
-  // testUpdateTable();
+  testUpdateTable();
   // testScans();
   // testScansTwo();
   // testMultipleScans();
@@ -448,6 +448,8 @@ testInsertManyRecords(void)
     {
       RID rid = rids[i];
       TEST_CHECK(getRecord(table, rid, r));
+			printf("r = %s\n", serializeRecord(r, schema));
+			printf("expected is %s\n", serializeRecord(fromTestRecord(schema, realInserts[i]), schema));
       ASSERT_EQUALS_RECORDS(fromTestRecord(schema, realInserts[i]), r, schema, "compare records");
     }
 

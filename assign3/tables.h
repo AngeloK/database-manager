@@ -2,6 +2,7 @@
 #define TABLES_H
 
 #include "dt.h"
+#include "buffer_mgr.h"
 
 // Data Types, Records, and Schemas
 typedef enum DataType {
@@ -59,7 +60,7 @@ typedef struct Table_Header {
 	int totalRecordCount;
 	int recordsPerPage;
 	RID *freePointer;
-	// BM_BufferPool *bm;
+	BM_BufferPool *bm;
 	// int *offsets;
 	// int maxRecords;
 } Table_Header;

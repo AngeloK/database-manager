@@ -66,21 +66,6 @@ RC createTable (char *name, Schema *schema) {
 	shutdownBufferPool(bm);
 	free(h);
 
-  // openPageFile(name, &fh);
-
-  // insert header pages based on the schema.
-  /* those pages may include
-    1.schema;
-    2.records count;
-    3.free space pointer (page_id, slot_id);
-    4.number of records 1 block can save;
-    5.An RID array save all RIDs.
-    6.May have status controller like 0 is closed, 1 is opened.
-  */
-
-  // Init every parameter.
-  // record = 0
-
 	shutdownBufferPool(bm);
   closePageFile(&fh);
   return RC_OK;
@@ -90,16 +75,27 @@ RC createTable (char *name, Schema *schema) {
 RC openTable (RM_TableData *rel, char *name) {
   // Open a table via table name.
   rel->name = name;
-	//
 	SM_FileHandle fh;
 	SM_PageHandle ph;
 	ph = (SM_PageHandle) malloc(PAGE_SIZE);
+
+
 
 	openPageFile(name, &fh);
 	readBlock(0, &fh, ph);
 
 	rel->schema = (Schema *)malloc(sizeof(Schema));
 	parseTableHeader(rel, ph);
+
+  BM_BufferPool *bm = MAKE_POOL();
+  BM_PageHandle *h = MAKE_PAGE_HANDLE();
+
+	initBufferPool(bm, name, 5, RS_FIFO, NULL);
+
+
+	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+	tableHeader->bm = bm;
+
 	printf("schema in openTable is :%s\n", serializeSchema(rel->schema));
 
 	return RC_OK;
@@ -117,8 +113,8 @@ RC deleteTable (char *name) {
 }
 int getNumTuples (RM_TableData *rel) {
 	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+  // return tableHeader->record_count;
   return tableHeader->totalRecordCount;
-  return 0;
 }
 
 
@@ -139,12 +135,13 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	ph = (SM_PageHandle) malloc(PAGE_SIZE);
 	// printf("recordsPerPage=%d\n", tableHeader->recordsPerPage);
 	printf("record length %d\n", schemaLength(rel->schema));
-	int offset = 50 + (freePointer->slot) * (schemaLength(rel->schema) + 3);
+	int offset = 50 + (freePointer->slot) * (schemaLength(rel->schema));
 	printf("offset=%d\n", offset);
 
 	int getAttrOffset;
 
 	openPageFile(rel->name, &fh);
+	printf("page is (freePointer)= %d\n", freePointer->page);
 	readBlock(freePointer->page, &fh, ph);
 
 	Value *value;
@@ -166,8 +163,16 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	// openPageFile(rel->name, &fh);
 	// readBlock(freePointer->page, &fh, ph);
 	// strcpy(ph+offset, result->buf);
-	memcpy(ph+offset, result->buf, strlen(result->buf));
+	printf("ph is %s\n", ph);
 	printf("%s\n", ph+offset);
+	strncpy(ph+offset, result->buf, strlen(result->buf));
+	printf("after mem copy%s\n", ph+offset);
+
+  BM_BufferPool *bm = MAKE_POOL();
+  BM_PageHandle *h = MAKE_PAGE_HANDLE();
+
+	// TODO added buffer manager.
+
 
 	// strncpy(ph+offset+4, record->data+4, 4);
 	// strcpy(ph+offset+8, record->data+8);
@@ -190,16 +195,48 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	rid->slot = freePointer->slot;
 
 	freePointer->slot++;
-	if (freePointer->slot > tableHeader->recordsPerPage) {
+	if (freePointer->slot > tableHeader->recordsPerPage - 1) {
 		freePointer->slot = 0;
 		freePointer->page++;
+
+		// initBufferPool(bm, rel->name, 5, RS_FIFO, NULL);
+		// pinPage(bm, h, freePointer->page);
+
+		Page_Header *pageHeader = (Page_Header *)malloc(sizeof(Page_Header));
+
+		initPageHeader(rel, pageHeader, freePointer->page);
+		char *s;
+		s = generatePageHeader(rel, pageHeader);
+		printf("s = %s\n", s);
+		// ensureCapacity(freePointer->page, &fh);
+		// readBlock(freePointer->page, &fh, ph);
+		// strncpy(ph, s, strlen(s));
+		writeBlock(freePointer->page, &fh, s);
+		free(pageHeader);
+		// markDirty(bm, h);
+		// unpinPage(bm, h);
+
+		// shutdownBufferPool(bm);
+		// free(h);
+
+		// pinPage(bm, h, freePointer->page);
+		// initPageHeader(rel, pageHeader, freePointer->page);
+		// h->data = generatePageHeader(rel, pageHeader);
+		// markDirty(bm, h);
+		// unpinPage(bm, h);
+
+		// shutdownBufferPool(bm);
+		// free(h);
+		// free(pageHeader);
 	}
+
 
 
 	printf("rid->page=%d\n", rid->page);
 	printf("rid->slot=%d\n", rid->slot);
 	record->id = *rid;
 
+	tableHeader->freePointer = freePointer;
 	// printf("free page=%d\n", freePointer->page);
   // if (record->id.page) {
     // update record based on rid;
@@ -229,7 +266,7 @@ RC updateRecord (RM_TableData *rel, Record *record) {
 	return RC_OK;
 }
 RC getRecord(RM_TableData *rel, RID id, Record *record) {
-	int offset = 50 + (id.slot) * (schemaLength(rel->schema) + 3);
+	int offset = 50 + (id.slot) * (schemaLength(rel->schema));
 	printf("offset=%d\n", offset);
   // if the record has been delted (detect by record->status == DELETED).
   // record = NULL;
@@ -248,14 +285,17 @@ RC getRecord(RM_TableData *rel, RID id, Record *record) {
 
 	openPageFile(rel->name, &fh);
 	readBlock(id.page, &fh, ph);
+	printf("%d leng5h\n", schemaLength(rel->schema));
 
-	memcpy(p, ph+offset, schemaLength(rel->schema) + 3);
+	memcpy(p, ph+offset, schemaLength(rel->schema));
 
 	printf("got data is %s\n", p);
-	Record *r = parseRecordFromString(rel->schema, p, id);
+	Record *r = deserializeRecord(rel->schema, p, id);
 
 	record->id = r->id;
 	record->data = r->data;
+
+	printf("Get record %s\n", serializeRecord(record, rel->schema));
 
 	// free(p);
 	// free(r);
@@ -630,7 +670,6 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 
 	tableHeader->freePointer = freePointer;
 
-
 	rel->mgmtData = tableHeader;
 
 	return RC_OK;
@@ -668,20 +707,20 @@ RC initPageHeader(RM_TableData *rel, Page_Header *pageHeader, int pageId) {
 }
 
 
-Record *parseRecordFromString(Schema *schema, char *recordString, RID id) {
+Record *deserializeRecord(Schema *schema, char *recordString, RID id) {
 	char *token;
 	token = strtok(recordString, "&");
 	int i = 0;
 
-	char **temp = malloc((schema->numAttr+1) * sizeof(char *));
+	char **temp = malloc((schema->numAttr) * sizeof(char *));
 
-	while (token != NULL && i < 8)
+	while (token != NULL && i < schema->numAttr)
 	{
 		temp[i] = malloc(strlen(token));
 		// strncpy(temp[i], token, strlen(token));
 		temp[i] = token;
 		printf("token=%s\n", token);
-		printf("token length =%d\n", strlen(token));
+		// printf("token length =%d\n", strlen(token));
 		token = strtok (NULL, "&");
 		i++;
 	}
@@ -696,15 +735,23 @@ Record *parseRecordFromString(Schema *schema, char *recordString, RID id) {
 
 	createRecord(&record, schema);
 
+	int offset;
+
 	for (i = 0; i < schema->numAttr; i++) {
+
+		printf("temp[%d] = %s\n", i, temp[i]);
+
+		// TODO Remove warning here.
+		// attrOffset(schema, i, &offset);
+
 		if (schema->dataTypes[i] == DT_STRING) {
 			MAKE_STRING_VALUE(value, temp[i]);
-			printf("value is %s\n", serializeValue(value));
+			// printf("value is %s\n", serializeValue(value));
 			setAttr(record, schema, i, value);
 		}
 		else {
 			MAKE_VALUE(value, schema->dataTypes[i], atoi(temp[i]));
-			printf("value is %s\n", serializeValue(value));
+			// printf("value is %s\n", serializeValue(value));
 			setAttr(record, schema, i, value);
 		}
 		freeVal(value);

@@ -96,5 +96,94 @@ RC freeRecord(Record *record)
  *
  *
  */
+RC getAttr(Record *record, Schema *schema, int attrNum, Value **value){
+    
+    int position = 0;
+    int index = 0;
+    Value *val;
+    int length;
+    while(index<attrNum){
+        if(schema->dataTypes[index]==DT_INT || schema->dataTypes[index]==DT_BOOL){
+            position = position + sizeof(int);
+        }
+        else if (schema->dataTypes[index]==DT_FLOAT){
+            position = position + sizeof(float);
+        }
+        else if (schema->dataTypes[index]==DT_STRING){
+            position = position + sizeof(int) + schema->typeLength[index];
+        }
+        index++;
+    }
+    
+    if(schema->dataTypes[attrNum]==DT_INT){
+        int integer;
+        memcpy(&integer, record->data + position, sizeof(int));
+        MAKE_VALUE(val, DT_INT, integer);
+    }
+    else if(schema->dataTypes[attrNum]==DT_BOOL){
+        int integer;
+        memcpy(&integer, record->data + position, sizeof(int));
+        MAKE_VALUE(val, DT_BOOL, integer);
+    }
+    else if(schema->dataTypes[attrNum]==DT_FLOAT){
+        float f;
+        memcpy(&f, record->data + position, sizeof(float));
+        MAKE_VALUE(val, DT_FLOAT, f);
+    }
+    else if(schema->dataTypes[attrNum]==DT_STRING){
+        length = 0;
+        char c = (char *) malloc(sizeof(char) * schema->typeLength[attrNum]);
+        memcpy(&length,record->data + position, sizeof(int));
+        memcpy(c, record -> data + position + sizeof(int), length);
+        c[length] = '\0';
+        MAKE_STRING_VALUE(val, c);
+        free(c);
+    }
+    
+    *value = val;
+    return RC_OK;
+    
+}
+
+RC setAttr(Record *record, Schema *schema, int attrNum, Value *value) {
+    int position = 0;
+    int index = 0;
+    
+    while(index<attrNum){
+        if(schema->dataTypes[index]==DT_INT || schema->dataTypes[index]==DT_BOOL){
+            position = position + sizeof(int);
+        }
+        else if (schema->dataTypes[index]==DT_FLOAT){
+            position = position + sizeof(float);
+        }
+        else if (schema->dataTypes[index]==DT_STRING){
+            position = position + sizeof(int) + schema->typeLength[index];
+        }
+        index++;
+    }
+    
+    if(schema->dataTypes[attrNum]==DT_INT){
+        int v = value->v.intV;
+        memcpy(record->data + position, &v, sizeof(int));
+    }
+    else if(schema->dataTypes[attrNum]==DT_BOOL){
+        int v = (int)(value->v.boolV);
+        memcpy(record->data + position, &v, sizeof(int));
+    }
+    else if(schema->dataTypes[attrNum]==DT_FLOAT){
+        float f = value->v.floatV;
+        memcpy(record->data + position, &f, sizeof(float));
+    }
+    else if(schema->dataTypes[attrNum]==DT_STRING){
+        int length = strlen(value->v.stringV);
+        char c = (char *) malloc(sizeof(char) * schema->typeLength[attrNum]);
+        memcpy(record->data + position,&length, sizeof(int));
+        memcpy(record -> data + position + sizeof(int),value->v.stringV, length);
+    }
+    
+    return RC_OK;
+
+    
+}
 
 

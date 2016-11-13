@@ -3,6 +3,7 @@
 
 #include "dt.h"
 #include "buffer_mgr.h"
+#include "expr.h"
 
 // Data Types, Records, and Schemas
 typedef enum DataType {
@@ -76,6 +77,12 @@ typedef struct Page_Header {
 	// struct Page_Header *next;
 	// RID **mapping;
 } Page_Header;
+
+
+typedef struct ScanInfo {
+  Expr *cond;
+	RID *curRID;
+} ScanInfo;
 
 
 #define MAKE_STRING_VALUE(result, value)				\

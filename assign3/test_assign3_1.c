@@ -516,6 +516,7 @@ void testScans (void)
 		rid.page = 1;
 		rid.slot = i;
 		getRecord(table, rid, r);
+		printf("%s\n", r->data+4);
 		printf("%s\n", serializeRecord(r, schema));
 	}
 

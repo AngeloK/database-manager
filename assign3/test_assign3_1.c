@@ -98,8 +98,8 @@ main (void)
   // testInsertManyRecords();
   // testRecords();
   // testCreateTableAndInsert();
-  testUpdateTable();
-  // testScans();
+  // testUpdateTable();
+  testScans();
   // testScansTwo();
   // testMultipleScans();
 
@@ -437,6 +437,7 @@ testInsertManyRecords(void)
       realInserts[i] = inserts[i%10];
       realInserts[i].a = i;
       r = fromTestRecord(schema, realInserts[i]);
+			printf("???\n");
       TEST_CHECK(insertRecord(table,r));
       rids[i] = r->id;
     }
@@ -504,48 +505,59 @@ void testScans (void)
   rids = (RID *) malloc(sizeof(RID) * numInserts);
 
   TEST_CHECK(initRecordManager(NULL));
-  TEST_CHECK(createTable("test_table_r",schema));
+  // TEST_CHECK(createTable("test_table_r",schema));
   TEST_CHECK(openTable(table, "test_table_r"));
+
+	// int i;
+
+	r = (Record *)malloc(sizeof(Record));
+	for (i = 0; i < numInserts; i++) {
+		RID rid;
+		rid.page = 1;
+		rid.slot = i;
+		getRecord(table, rid, r);
+		printf("%s\n", serializeRecord(r, schema));
+	}
 
   // insert rows into table
-  for(i = 0; i < numInserts; i++)
-  {
-      r = fromTestRecord(schema, inserts[i]);
-      TEST_CHECK(insertRecord(table,r));
-      rids[i] = r->id;
-  }
+  // for(i = 0; i < numInserts; i++)
+  // {
+  //     r = fromTestRecord(schema, inserts[i]);
+  //     TEST_CHECK(insertRecord(table,r));
+  //     rids[i] = r->id;
+  // }
 
   TEST_CHECK(closeTable(table));
-  TEST_CHECK(openTable(table, "test_table_r"));
-
-  // run some scans
+  // TEST_CHECK(openTable(table, "test_table_r"));
+	//
+  // // run some scans
   MAKE_CONS(left, stringToValue("i1"));
   MAKE_ATTRREF(right, 2);
   MAKE_BINOP_EXPR(sel, left, right, OP_COMP_EQUAL);
-
-  TEST_CHECK(startScan(table, sc, sel));
-  while((rc = next(sc, r)) == RC_OK)
-  {
-      for(i = 0; i < scanSizeOne; i++)
-      {
-          if (memcmp(fromTestRecord(schema, scanOneResult[i])->data,r->data,getRecordSize(schema)) == 0)
-              foundScan[i] = TRUE;
-      }
-  }
-  if (rc != RC_RM_NO_MORE_TUPLES)
-    TEST_CHECK(rc);
-  TEST_CHECK(closeScan(sc));
-  for(i = 0; i < scanSizeOne; i++)
-    ASSERT_TRUE(foundScan[i], "check for scan result");
-
-  // clean up
-  TEST_CHECK(closeTable(table));
-  TEST_CHECK(deleteTable("test_table_r"));
+	//
+  // TEST_CHECK(startScan(table, sc, sel));
+  // while((rc = next(sc, r)) == RC_OK)
+  // {
+  //     for(i = 0; i < scanSizeOne; i++)
+  //     {
+  //         if (memcmp(fromTestRecord(schema, scanOneResult[i])->data,r->data,getRecordSize(schema)) == 0)
+  //             foundScan[i] = TRUE;
+  //     }
+  // }
+  // if (rc != RC_RM_NO_MORE_TUPLES)
+  //   TEST_CHECK(rc);
+  // TEST_CHECK(closeScan(sc));
+  // for(i = 0; i < scanSizeOne; i++)
+  //   ASSERT_TRUE(foundScan[i], "check for scan result");
+	//
+  // // clean up
+  // TEST_CHECK(closeTable(table));
+  // TEST_CHECK(deleteTable("test_table_r"));
   TEST_CHECK(shutdownRecordManager());
 
   free(table);
   free(sc);
-  freeExpr(sel);
+  // freeExpr(sel);
   TEST_DONE();
 }
 

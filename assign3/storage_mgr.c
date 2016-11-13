@@ -22,7 +22,7 @@ void initStorageManager (void) {
 
 	// Allocate space for the Page and File  handles.
 	fHandle = (SM_FileHandle *) malloc(sizeof(SM_FileHandle *));
-	memPage = (SM_PageHandle) malloc(sizeof(SM_PageHandle)); 
+	memPage = (SM_PageHandle) malloc(sizeof(SM_PageHandle));
 
 };
 /*
@@ -31,7 +31,7 @@ void initStorageManager (void) {
 **	Method Name :createPageFile
 **	Description: Create a new page file. The initial file size is one page. This method will fill this single page with '\0' bytes.
 **	Input Parameters : pointer to fileName of type character - char *fileName
-**	Return Value : RC_OK | RC_FILE_NOT_FOUND | RC_WRITE_FAILED 
+**	Return Value : RC_OK | RC_FILE_NOT_FOUND | RC_WRITE_FAILED
 **
 ******************************************************************************************************************
 */
@@ -83,7 +83,7 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 	int fd = open(fileName, flag);
 
 	// fcntl gets or changes the file status, the second parameter "F_GETFL"
-	// is used to get the flag, if the file is opened correctly, it returns a 
+	// is used to get the flag, if the file is opened correctly, it returns a
 	// non-negative integer.
 	if (fcntl(fd, F_GETFL) < 0) {
 		return RC_FILE_NOT_FOUND;
@@ -98,8 +98,8 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 
 	printf("size is :%llu\n", fsize);
 
-	
-	// assign values to fileName, totalNumPages, and initialize current page 
+
+	// assign values to fileName, totalNumPages, and initialize current page
 	// position as 0.
 	fHandle->fileName = fileName;
 	fHandle->totalNumPages = fsize/PAGE_SIZE;
@@ -116,7 +116,7 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 **      Method Name :closePageFile
 **      Description: Close a page file
 **      Input Parameters :An existing file handle
-**      Return Value : RC_OK | RC_FILE_NOT_FOUND 
+**      Return Value : RC_OK | RC_FILE_NOT_FOUND
 **
 ******************************************************************************************************************
 */
@@ -129,7 +129,7 @@ RC closePageFile (SM_FileHandle *fHandle) {
 	if (close(fd) == 0) {
 		return RC_OK;
 	}
-	// otherwise, return error code. 
+	// otherwise, return error code.
 	return RC_FILE_NOT_FOUND;
 };
 /*
@@ -138,7 +138,7 @@ RC closePageFile (SM_FileHandle *fHandle) {
 **      Method Name :destroyPageFile
 **      Description: Destroys an existing page file
 **      Input Parameters : filename
-**      Return Value : RC_OK | RC_FILE_NOT_FOUND 
+**      Return Value : RC_OK | RC_FILE_NOT_FOUND
 **
 ******************************************************************************************************************
 */
@@ -319,6 +319,9 @@ RC writeBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
 	if (pwrite(md, memPage, PAGE_SIZE, offset) > 0 ) {
 		printf("write to block [%s]\n", memPage);
 		return RC_OK;
+	}
+	else {
+		puts("why??????");
 	}
 	return RC_WRITE_FAILED;
 

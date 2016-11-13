@@ -78,13 +78,6 @@ typedef struct Page_Header {
 	// RID **mapping;
 } Page_Header;
 
-
-typedef struct ScanInfo {
-  Expr *cond;
-	RID *curRID;
-} ScanInfo;
-
-
 #define MAKE_STRING_VALUE(result, value)				\
   do {									\
     (result) = (Value *) malloc(sizeof(Value));				\

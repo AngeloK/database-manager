@@ -193,8 +193,42 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	// printf("data+4=%s\n", ph+offset+4);
 	// printf("data+8=%s\n", ph+offset+8);
 
-	printf("ph+offset(%d)=%s\n",offset, ph+offset);
+
+	// update header;
+	Page_Header *updatedHeader = (Page_Header *)malloc(sizeof(Page_Header));
+
+	char *header = (char *)malloc(sizeof(char) * 50);
+	//
+	memcpy(header, ph, 50);
+	printf("header %s \n", header);
+
+	deserializePageHeader(header, updatedHeader);
+
+	// printf("page id is %s\n", updatedHeader->pageId);
+	// printf("page id is %s\n", updatedHeader->isFull);
+	// printf("page id is %s\n", updatedHeader->recordCount);
+	// printf("page id is %s\n", updatedHeader->recordCapacity);
+
+
+	updatedHeader->recordCount++;
+
+	if(updatedHeader->recordCount > updatedHeader->recordCapacity - 1) {
+		updatedHeader->isFull = 1;
+	}
+
+	char *updatedHeaderStr = generatePageHeader(rel, updatedHeader);
+
+
+
+	// updatedHeader->pageId = freePointer->page;
+	// updatedHeader->recordCount =
+	// printf("header %s\n", updatedHeaderStr);
+	// printf("header %d\n", strlen(updatedHeaderStr));
+	memcpy(ph, updatedHeaderStr, strlen(updatedHeaderStr));
+	printf("header %s\n", ph);
+	//
 	writeBlock(freePointer->page, &fh, ph);
+
 	//
 	// readBlock(freePointer->page, &fh, ph+offset);
 	// printf("ph is %s\n", ph+offset);
@@ -592,6 +626,36 @@ int tableInfoLength(RM_TableData *rel) {
 }
 
 
+RC deserializePageHeader(char *str, Page_Header *pageHeader) {
+
+	int vals[4], i;
+
+	i = 0;
+
+	char *token;
+	// printf("%s\n", str);
+	token = strtok(str, "&");
+	// printf("token= %s\n", token);
+	while(token != NULL) {
+		vals[i] = atoi(token);
+		// printf("%d\n", atoi(token));
+		token = strtok(NULL, "&");
+		i++;
+	}
+	int *cpVals = (int *)malloc(sizeof(int) * 4);
+
+	memcpy(cpVals, vals, sizeof(int) * 4);
+
+	pageHeader->pageId = cpVals[0];
+	pageHeader->isFull = cpVals[1];
+	pageHeader->recordCount = cpVals[2];
+	pageHeader->recordCapacity = cpVals[3];
+
+	return RC_OK;
+}
+
+
+
 char *generatePageHeader(RM_TableData *rel, Page_Header *pageHeader) {
 	VarString *result;
 	MAKE_VARSTRING(result);
@@ -610,7 +674,10 @@ char *generatePageHeader(RM_TableData *rel, Page_Header *pageHeader) {
 	APPEND_STRING(result, "&");
 
 	APPEND(result, "%d", pageHeader->recordCapacity);
+	APPEND_STRING(result, "&");
 	// APPEND(result, "%d", 1000);
+
+	printf("updated header is %s\n", result->buf);
 
 	RETURN_STRING(result);
 }

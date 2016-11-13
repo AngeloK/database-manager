@@ -95,11 +95,11 @@ main (void)
 	// printf("%s\n", token);
 	// puts(s);
 
-  // testInsertManyRecords();
+  testInsertManyRecords();
   // testRecords();
   // testCreateTableAndInsert();
   // testUpdateTable();
-  testScans();
+  // testScans();
   // testScansTwo();
   // testMultipleScans();
 

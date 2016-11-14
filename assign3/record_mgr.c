@@ -225,7 +225,7 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	// printf("header %s\n", updatedHeaderStr);
 	// printf("header %d\n", strlen(updatedHeaderStr));
 	memcpy(ph, updatedHeaderStr, strlen(updatedHeaderStr));
-	printf("header %s\n", ph);
+	// printf("header %s\n", ph);
 	//
 	writeBlock(freePointer->page, &fh, ph);
 
@@ -255,6 +255,10 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 		// strncpy(ph, s, strlen(s));
 		writeBlock(freePointer->page, &fh, s);
 		free(pageHeader);
+
+		//increase page count.
+		//
+
 		// markDirty(bm, h);
 		// unpinPage(bm, h);
 
@@ -272,13 +276,20 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 		// free(pageHeader);
 	}
 
+	tableHeader->pageCount = freePointer->page;
+	tableHeader->freePointer = freePointer;
+	tableHeader->totalRecordCount++;
+	// update table header.
+	readBlock(0, &fh, ph);
+	printf("table header is %s\n", ph);
 
+	char *tableHeaderStr = generateTableInfo(rel);
+	printf("updated table header: %s\n", tableHeaderStr);
+	memcpy(ph, tableHeaderStr, strlen(tableHeaderStr));
+	writeBlock(0, &fh, ph);
 
-	printf("rid->page=%d\n", rid->page);
-	printf("rid->slot=%d\n", rid->slot);
 	record->id = *rid;
 
-	tableHeader->freePointer = freePointer;
 	// printf("free page=%d\n", freePointer->page);
   // if (record->id.page) {
     // update record based on rid;
@@ -286,6 +297,9 @@ RC insertRecord (RM_TableData *rel, Record *record) {
   // else {
   // }
 
+	free(updatedHeader);
+	free(updatedHeaderStr);
+	free(header);
 	free(ph);
 	closePageFile(&fh);
   return RC_OK;

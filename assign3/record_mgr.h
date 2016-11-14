@@ -13,6 +13,13 @@ typedef struct RM_ScanHandle
   void *mgmtData;
 } RM_ScanHandle;
 
+
+typedef struct ScanInfo {
+  Expr *cond;
+	RID *curRID;
+} ScanInfo;
+
+
 // table and manager
 extern RC initRecordManager (void *mgmtData);
 extern RC shutdownRecordManager ();
@@ -57,6 +64,6 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader);
 DataType stringToDatatype(char *token);
 RC initPageHeader(RM_TableData *rel, Page_Header *pageHeader, int pageId);
 Record *deserializeRecord(Schema *schema, char *recordString, RID id);
-
+RC deserializePageHeader(char *str, Page_Header *pageHeader);
 
 #endif // RECORD_MGR_H

@@ -29,7 +29,7 @@ RC shutdownRecordManager () {
 }
 RC createTable (char *name, Schema *schema) {
   RM_TableData *table = (RM_TableData *) malloc(sizeof(RM_TableData));
-	Page_Header *pegeHeader = (Page_Header *)malloc(sizeof(Page_Header));
+	Page_Header *pageHeader = (Page_Header *)malloc(sizeof(Page_Header));
 
 	table->name = name;
 	table->schema = schema;
@@ -56,7 +56,6 @@ RC createTable (char *name, Schema *schema) {
 	pinPage(bm, h, 1);
 
   // TODO replace 'null' with pageHeader.
-	Page_Header *pageHeader = (Page_Header *)malloc(sizeof(Page_Header));
 
 	initPageHeader(table, pageHeader, 1);
 	h->data = generatePageHeader(table, pageHeader);
@@ -65,9 +64,10 @@ RC createTable (char *name, Schema *schema) {
 
 	shutdownBufferPool(bm);
 	free(h);
-
-	shutdownBufferPool(bm);
   closePageFile(&fh);
+	free(table);
+	free(pageHeader);
+	free(tableHeader);
   return RC_OK;
 
   // here just create a table with a name.
@@ -87,22 +87,27 @@ RC openTable (RM_TableData *rel, char *name) {
 	rel->schema = (Schema *)malloc(sizeof(Schema));
 	parseTableHeader(rel, ph);
 
-  BM_BufferPool *bm = MAKE_POOL();
-  BM_PageHandle *h = MAKE_PAGE_HANDLE();
+  // BM_BufferPool *bm = MAKE_POOL();
+  // BM_PageHandle *h = MAKE_PAGE_HANDLE();
 
-	initBufferPool(bm, name, 5, RS_FIFO, NULL);
+	// initBufferPool(bm, name, 5, RS_FIFO, NULL);
 
 
 	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
-	tableHeader->bm = bm;
+	// tableHeader->bm = bm;
 
 	printf("schema in openTable is :%s\n", serializeSchema(rel->schema));
+	closePageFile(&fh);
+	// free(ph);
 
 	return RC_OK;
 }
 
 
 RC closeTable (RM_TableData *rel) {
+
+  freeSchema(rel->schema);
+  free(rel->mgmtData);
 
   return RC_OK;
 
@@ -124,26 +129,28 @@ RC insertRecord (RM_TableData *rel, Record *record) {
   // 2. insert a new record;
   // 3. assign rid to record->rid;
 	// 4. update space pointer.
+
 	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+	printf("begin insert\n");
   // if inside the record, we have the RID.
 	RID *freePointer = tableHeader->freePointer;
 	RID *rid = (RID  *)malloc(sizeof(RID));
 	// RID rid;
-	printf("record is %s\n", serializeRecord(record, rel->schema));
+	// printf("record is %s\n", serializeRecord(record, rel->schema));
 
 	SM_FileHandle fh;
 	SM_PageHandle ph;
 	ph = (SM_PageHandle) malloc(PAGE_SIZE);
 	// printf("recordsPerPage=%d\n", tableHeader->recordsPerPage);
-	printf("record length %d\n", schemaLength(rel->schema));
+	// printf("record length %d\n", schemaLength(rel->schema));
 	int offset = 50 + (freePointer->slot) * (schemaLength(rel->schema));
-	printf("offset=%d\n", offset);
+	// printf("offset=%d\n", offset);
 
 	// int getAttrOffset;
 
 	openPageFile(rel->name, &fh);
-	printf("page is (freePointer)= %d\n", freePointer->page);
 	readBlock(freePointer->page, &fh, ph);
+	// printf("page is (freePointer)= %d\n", freePointer->page);
 
 	Value *value;
 	int i;
@@ -163,21 +170,21 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 		// printf("%s\n", token);
 		// printf("s ==== %s\n", s);
 		APPEND(result, "%s&", serializeValue(value));
-		freeVal(value);
 	}
+	freeVal(value);
 
-	printf("buffer is %s\n", result->buf);
+	// printf("buffer is %s\n", result->buf);
 
 	// openPageFile(rel->name, &fh);
 	// readBlock(freePointer->page, &fh, ph);
 	// strcpy(ph+offset, result->buf);
-	printf("ph is %s\n", ph);
-	printf("%s\n", ph+offset);
+	// printf("ph is %s\n", ph);
+	// printf("%s\n", ph+offset);
 	memcpy(ph+offset, result->buf, strlen(result->buf));
-	printf("after mem copy%s\n", ph+offset);
+	// printf("after mem copy%s\n", ph+offset);
 
-  BM_BufferPool *bm = MAKE_POOL();
-  BM_PageHandle *h = MAKE_PAGE_HANDLE();
+  // BM_BufferPool *bm = MAKE_POOL();
+  // BM_PageHandle *h = MAKE_PAGE_HANDLE();
 
 	// TODO added buffer manager.
 
@@ -204,12 +211,6 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 
 	deserializePageHeader(header, updatedHeader);
 
-	// printf("page id is %s\n", updatedHeader->pageId);
-	// printf("page id is %s\n", updatedHeader->isFull);
-	// printf("page id is %s\n", updatedHeader->recordCount);
-	// printf("page id is %s\n", updatedHeader->recordCapacity);
-
-
 	updatedHeader->recordCount++;
 
 	if(updatedHeader->recordCount > updatedHeader->recordCapacity - 1) {
@@ -220,18 +221,8 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 
 
 
-	// updatedHeader->pageId = freePointer->page;
-	// updatedHeader->recordCount =
-	// printf("header %s\n", updatedHeaderStr);
-	// printf("header %d\n", strlen(updatedHeaderStr));
 	memcpy(ph, updatedHeaderStr, strlen(updatedHeaderStr));
-	// printf("header %s\n", ph);
-	//
 	writeBlock(freePointer->page, &fh, ph);
-
-	//
-	// readBlock(freePointer->page, &fh, ph+offset);
-	// printf("ph is %s\n", ph+offset);
 
 	rid->page = freePointer->page;
 	rid->slot = freePointer->slot;
@@ -240,40 +231,19 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	if (freePointer->slot > tableHeader->recordsPerPage - 1) {
 		freePointer->slot = 0;
 		freePointer->page++;
-
-		// initBufferPool(bm, rel->name, 5, RS_FIFO, NULL);
-		// pinPage(bm, h, freePointer->page);
-
 		Page_Header *pageHeader = (Page_Header *)malloc(sizeof(Page_Header));
 
 		initPageHeader(rel, pageHeader, freePointer->page);
 		char *s;
 		s = generatePageHeader(rel, pageHeader);
-		printf("s = %s\n", s);
+		// printf("s = %s\n", s);
 		ensureCapacity(freePointer->page, &fh);
 		// readBlock(freePointer->page, &fh, ph);
 		// strncpy(ph, s, strlen(s));
 		writeBlock(freePointer->page, &fh, s);
 		free(pageHeader);
+		free(s);
 
-		//increase page count.
-		//
-
-		// markDirty(bm, h);
-		// unpinPage(bm, h);
-
-		// shutdownBufferPool(bm);
-		// free(h);
-
-		// pinPage(bm, h, freePointer->page);
-		// initPageHeader(rel, pageHeader, freePointer->page);
-		// h->data = generatePageHeader(rel, pageHeader);
-		// markDirty(bm, h);
-		// unpinPage(bm, h);
-
-		// shutdownBufferPool(bm);
-		// free(h);
-		// free(pageHeader);
 	}
 
 	tableHeader->pageCount = freePointer->page;
@@ -290,12 +260,14 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 
 	record->id = *rid;
 
-	free(updatedHeader);
-	free(updatedHeaderStr);
-	free(header);
-	free(tableHeaderStr);
-	free(ph);
 	closePageFile(&fh);
+	// free(rid);
+	// free(updatedHeader);
+	// free(updatedHeaderStr);
+	// free(header);
+	// free(tableHeaderStr);
+	// free(ph);
+	puts("insert end");
   return RC_OK;
 }
 RC deleteRecord (RM_TableData *rel, RID id) {
@@ -400,8 +372,10 @@ RC getRecord(RM_TableData *rel, RID id, Record *record) {
 
 	memcpy(p, ph+offset, schemaLength(rel->schema));
 
-	// printf("got data is %s\n", p);
 	Record *r = deserializeRecord(rel->schema, p, id);
+	printf("got data is %s\n", p);
+
+  printf("r = %s\n", serializeRecord(r, rel->schema));
 
 	record->id = r->id;
 	record->data = r->data;
@@ -511,11 +485,12 @@ int getRecordSize (Schema *schema) {
 		schemaLength+= schema->typeLength[i];
 		}
 		else {
-		schemaLength+= sizeof(int);
+		schemaLength+= 1;
 		}
 	}
-	// return schemaLength;
-	return 0;
+	// printf("get record size %d\n", schemaLength);
+  // return 8;
+	return schemaLength;
 }
 
 Schema *createSchema (int numAttr, char **attrNames, DataType *dataTypes, int *typeLength, int keySize, int *keys) {
@@ -531,6 +506,14 @@ Schema *createSchema (int numAttr, char **attrNames, DataType *dataTypes, int *t
 }
 
 RC freeSchema (Schema *schema) {
+  free(schema->dataTypes);
+
+  free(schema->attrNames);
+
+  free(schema->keyAttrs);
+  free(schema->typeLength);
+
+  free(schema);
 	return RC_OK;
 }
 
@@ -556,7 +539,7 @@ RC createRecord (Record **record, Schema *schema) {
 	// Reference for why use double pointer here.
 	// http://stackoverflow.com/questions/5580761/why-use-double-pointer-or-why-use-pointers-to-pointers
 	// int recordLength = schemaLength(schema);
-	int recordLength = schemaLength(schema);
+	int recordLength = getRecordSize(schema);
 
 	*record = (Record *)malloc(sizeof(Record));
 
@@ -578,48 +561,49 @@ RC getAttr (Record *record, Schema *schema, int attrNum, Value **value) {
 	switch (schema->dataTypes[attrNum]) {
 		case DT_INT:
 			(*value)->dt = DT_INT;
-			(*value)->v.intV = atoi(valueFromRecord); // get int value from string.
+			memcpy(&((*value)->v.intV), valueFromRecord, sizeof(int));
 			break;
 		case DT_STRING:
 			(*value)->dt = DT_STRING;
 			int stringLength = schema->typeLength[attrNum];
-
-			// Allocate space.
-			(*value)->v.stringV = (char *)malloc(stringLength);
+			(*value)->v.stringV = (char *)malloc(sizeof(char) * stringLength + 1);
+			// // Allocate space.
 			strncpy((*value)->v.stringV, valueFromRecord, stringLength);
+			(*value)->v.stringV[stringLength] = '\0';
 			break;
 		case DT_BOOL:
 			(*value)->dt = DT_BOOL;
-
-			// TODO assign bool value.
-			// (*value)->v.boolV = transferTo(valueFromRecord, DT_BOOL);
-			// (*value)->v.boolV = NULL;
+			memcpy(&((*value)->v.boolV), valueFromRecord, sizeof(bool));
 			break;
 		case DT_FLOAT:
 			(*value)->dt = DT_FLOAT;
-			// TODO assign float value.
-			// (*value)->v.floatV = NULL;
+			memcpy(&((*value)->v.floatV), valueFromRecord, sizeof(float));
 			break;
 	}
 
-	// if ((*value)->dt == DT_STRING) {
-	// 	printf("value final is %s\n", (*value)->v.stringV );
-	// }
   return RC_OK;
 }
-RC setAttr (Record *record, Schema *schema, int attrNum, Value *value) {
-	int offset;
-	char *result = serializeValue(value);
 
-	if (attrOffset(schema, attrNum, &offset) == 0) {
-			strcpy(record->data+offset, result);
-		  return RC_OK;
-	}
-	else {
-		// error.
-		return -1;
-	}
+RC setAttr (Record *record, Schema *schema, int attrNum, Value *value){
+		int offset;
+    attrOffset(schema, attrNum, &offset);
+		char *result = record->data+offset;
 
+		switch (value->dt) {
+			case DT_INT:
+				memcpy(result, &(value->v.intV) ,sizeof(int));
+				break;
+			case DT_STRING:
+				memcpy(result, value->v.stringV, schema->typeLength[attrNum]);
+				break;
+			case DT_FLOAT:
+				memcpy(result, &(value->v.floatV) ,sizeof(float));
+				break;
+			case DT_BOOL:
+				memcpy(result, &(value->v.boolV) ,sizeof(bool));
+				break;
+		}
+		return RC_OK;
 }
 
 
@@ -644,7 +628,7 @@ char *generateTableInfo(RM_TableData *rel) {
   MAKE_VARSTRING(result);
 	Schema *schema = rel->schema;
 	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
-	char *timer = (char *)malloc(26);
+	// char *timer = (char *)malloc(26);
 	// char *r;
 
 	int recordLen = schemaLength(rel->schema);
@@ -680,9 +664,9 @@ char *generateTableInfo(RM_TableData *rel) {
 	APPEND_STRING(result, "&");
 
 	// lastAccessed.
-	currentTime(timer);
-	APPEND_STRING(result, timer);
-	APPEND_STRING(result, "&");
+	// currentTime(timer);
+	APPEND_STRING(result, "2016-11-13 23:31:24&");
+	// APPEND_STRING(result, "&");
 
 	// APPEND_STRING(result, serializeSchema(rel->schema));
 
@@ -691,7 +675,7 @@ char *generateTableInfo(RM_TableData *rel) {
 	// APPEND(result, "%d", 3);
 	APPEND_STRING(result, "&");
 
-	char *dt[4] = {"DT_INT", "DT_STRING", "DT_BOOL", "DT_FLOAT"};
+	// char *dt[4] = {"DT_INT", "DT_STRING", "DT_BOOL", "DT_FLOAT"};
 
 	int i;
 	for (i = 0; i < schema->numAttr; i++) {
@@ -721,6 +705,7 @@ char *generateTableInfo(RM_TableData *rel) {
 		}
 	APPEND_STRING(result, "&");
 	}
+	// free(timer);
   RETURN_STRING(result);
 }
 
@@ -902,6 +887,8 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 
 	rel->mgmtData = tableHeader;
 
+
+
 	return RC_OK;
 }
 
@@ -985,7 +972,9 @@ Record *deserializeRecord(Schema *schema, char *recordString, RID id) {
 		}
 		freeVal(value);
 	}
-	// free(temp);
+	free(temp);
 	record->id = id;
+
+	// printf("record length ins deserializeRecord is %d\n", strlen(record->data));
 	return record;
 }

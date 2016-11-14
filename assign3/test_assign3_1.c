@@ -8,8 +8,23 @@
 
 #define ASSERT_EQUALS_RECORDS(_l,_r, schema, message)			\
   do {									\
+		printf("%d\n", memcmp(_l->data,_r->data,getRecordSize(schema))); \
     Record *_lR = _l;                                                   \
     Record *_rR = _r;                                                   \
+		printf("%s\n", serializeRecord(_lR, schema));\
+		printf("%s\n", serializeRecord(_rR, schema));\
+		printf("%s\n", _lR->data);\
+		printf("%s\n", _lR->data+4);\
+		printf("%s\n", _lR->data+8);\
+		printf("=====\n");\
+		printf("%s\n", _rR->data);\
+		printf("%s\n", _rR->data+4);\
+		printf("%s\n", _rR->data+8);\
+		printf("size of lL %d\n", sizeof(_lR->data));\
+		printf("size of rL %d\n", sizeof(_rR->data));\
+		printf("%d\n", memcmp(_lR->data,_rR->data,getRecordSize(schema))); \
+		printf("5 %d\n", memcmp(_lR->data,_rR->data,5)); \
+		printf("8 %d\n", memcmp(_lR->data,_rR->data,0)); \
     ASSERT_TRUE(memcmp(_lR->data,_rR->data,getRecordSize(schema)) == 0, message); \
     int i;								\
     for(i = 0; i < schema->numAttr; i++)				\
@@ -77,9 +92,9 @@ main (void)
 {
   testName = "";
 
-  // testInsertManyRecords();
+  testInsertManyRecords();
   // testRecords();
-  testCreateTableAndInsert();
+  // testCreateTableAndInsert();
   // testUpdateTable();
   // testScans();
   // testScansTwo();
@@ -171,10 +186,13 @@ testCreateTableAndInsert (void)
       int pos = rand() % numInserts;
       RID rid = rids[pos];
       TEST_CHECK(getRecord(table, rid, r));
-			printf("1. %s\n", serializeRecord(fromTestRecord(schema, inserts[pos]), schema));
-			printf("data %s\n", fromTestRecord(schema, inserts[pos])->data);
-			printf("2. %s\n", serializeRecord(r, schema));
-			printf("data %s\n", r->data);
+			// printf("1. %s\n", serializeRecord(fromTestRecord(schema, inserts[pos]), schema));
+			// printf("data %s\n", fromTestRecord(schema, inserts[pos])->data);
+			// printf("data %d\n", sizeof(fromTestRecord(schema, inserts[pos])->data));
+			// printf("2. %s\n", serializeRecord(r, schema));
+			// printf("data %s\n", r->data);
+			// printf("data %d\n", sizeof(r->data));
+			// printf("memcmp = %d\n", memcmp(fromTestRecord(schema, inserts[pos])->data, r->data, 7));
       ASSERT_EQUALS_RECORDS(fromTestRecord(schema, inserts[pos]), r, schema, "compare records");
     }
 
@@ -340,6 +358,10 @@ testUpdateTable (void)
     {
       RID rid = rids[i];
       TEST_CHECK(getRecord(table, rid, r));
+			printf("1. r=%s, data %s\n", serializeRecord(r, schema), r->data);
+			printf("2. r=%s, data %s\n", serializeRecord(fromTestRecord(schema, finalR[i]), schema),fromTestRecord(schema, finalR[i])->data );
+			int s = memcmp(fromTestRecord(schema, finalR[i])->data, r->data, getRecordSize(schema));
+			printf("s = %d\n", s);
       ASSERT_EQUALS_RECORDS(fromTestRecord(schema, finalR[i]), r, schema, "compare records");
     }
 
@@ -390,6 +412,7 @@ testInsertManyRecords(void)
       realInserts[i] = inserts[i%10];
       realInserts[i].a = i;
       r = fromTestRecord(schema, realInserts[i]);
+			printf("here ???\n");
       TEST_CHECK(insertRecord(table,r));
       rids[i] = r->id;
     }
@@ -401,14 +424,18 @@ testInsertManyRecords(void)
     {
       RID rid = rids[i];
       TEST_CHECK(getRecord(table, rid, r));
+			printf("1. %s\n", serializeRecord(fromTestRecord(schema, realInserts[i]), schema));
+			printf("2. %s\n", serializeRecord(r, schema));
+			printf("memcmp %d\n", memcmp(fromTestRecord(schema, realInserts[i])->data, r->data, 6));
+			printf("%d\n", getRecordSize(schema));
       ASSERT_EQUALS_RECORDS(fromTestRecord(schema, realInserts[i]), r, schema, "compare records");
     }
 
-  r = fromTestRecord(schema, updates[0]);
-  r->id = rids[randomRec];
-  TEST_CHECK(updateRecord(table,r));
-  TEST_CHECK(getRecord(table, rids[randomRec], r));
-  ASSERT_EQUALS_RECORDS(fromTestRecord(schema, updates[0]), r, schema, "compare records");
+  // r = fromTestRecord(schema, updates[0]);
+  // r->id = rids[randomRec];
+  // TEST_CHECK(updateRecord(table,r));
+  // TEST_CHECK(getRecord(table, rids[randomRec], r));
+  // ASSERT_EQUALS_RECORDS(fromTestRecord(schema, updates[0]), r, schema, "compare records");
 
   TEST_CHECK(closeTable(table));
   TEST_CHECK(deleteTable("test_table_t"));

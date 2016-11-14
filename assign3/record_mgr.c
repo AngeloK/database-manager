@@ -488,9 +488,9 @@ int getRecordSize (Schema *schema) {
 		schemaLength+= 1;
 		}
 	}
-	printf("get record size %d\n", schemaLength);
+	// printf("get record size %d\n", schemaLength);
+  // return 8;
 	return schemaLength;
-	// return 0;
 }
 
 Schema *createSchema (int numAttr, char **attrNames, DataType *dataTypes, int *typeLength, int keySize, int *keys) {

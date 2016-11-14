@@ -290,13 +290,6 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 
 	record->id = *rid;
 
-	// printf("free page=%d\n", freePointer->page);
-  // if (record->id.page) {
-    // update record based on rid;
-  // }
-  // else {
-  // }
-
 	free(updatedHeader);
 	free(updatedHeaderStr);
 	free(header);
@@ -368,6 +361,10 @@ RC updateRecord (RM_TableData *rel, Record *record) {
 	return RC_OK;
 }
 RC getRecord(RM_TableData *rel, RID id, Record *record) {
+
+	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+
+
 	int offset = 50 + (id.slot) * (schemaLength(rel->schema));
 	// printf("offset=%d\n", offset);
   // if the record has been delted (detect by record->status == DELETED).
@@ -387,6 +384,18 @@ RC getRecord(RM_TableData *rel, RID id, Record *record) {
 
 	openPageFile(rel->name, &fh);
 	readBlock(id.page, &fh, ph);
+
+	char *pageHeaderStr = (char *)malloc(sizeof(char) * 50);
+	Page_Header *pageHeader = (Page_Header *)malloc(sizeof(Page_Header));
+
+	memcpy(pageHeaderStr, ph, 50);
+	printf("pageHeaderStr %s\n", pageHeaderStr);
+	deserializePageHeader(pageHeaderStr, pageHeader);
+
+	if (id.page >tableHeader->pageCount || id.slot > pageHeader->recordCount) {
+		printf("get record error, no more tuples\n");
+		return RC_RM_NO_MORE_TUPLES;
+	}
 	// printf("%d leng5h\n", schemaLength(rel->schema));
 
 	memcpy(p, ph+offset, schemaLength(rel->schema));
@@ -411,10 +420,83 @@ RC getRecord(RM_TableData *rel, RID id, Record *record) {
 
 // scans
 RC startScan (RM_TableData *rel, RM_ScanHandle *scan, Expr *cond) {
+	ScanInfo *scanInfo = (ScanInfo *)malloc(sizeof(ScanInfo));
+	scanInfo->cond = cond;
+	RID startRID;
+	startRID.page = 1;
+	startRID.slot = 0;
+	scanInfo->curRID = startRID;
+
+	scan->mgmtData = (void *)scanInfo;
+	scan->rel = rel;
+
 	return RC_OK;
 }
 RC next (RM_ScanHandle *scan, Record *record) {
-	return RC_OK;
+
+	// record = (Record *)malloc(sizeof(Record));
+
+	// createRecord (&r, scan->rel->schema);
+
+	ScanInfo *scanInfo = (ScanInfo *)scan->mgmtData;
+	RID currentRID = scanInfo->curRID;
+	Value *value;
+
+	printf("page: %d\n", currentRID.page);
+	printf("slot: %d\n", currentRID.slot);
+
+	SM_FileHandle fh;
+	SM_PageHandle ph;
+	ph = (SM_PageHandle) malloc(PAGE_SIZE);
+
+	openPageFile(scan->rel->name, &fh);
+	readBlock(currentRID.page, &fh, ph);
+	// printf("ph is %s\n", ph);
+
+	char *pageHeaderStr = (char *)malloc(sizeof(char) * 50);
+	Page_Header *pageHeader = (Page_Header *)malloc(sizeof(Page_Header));
+
+	memcpy(pageHeaderStr, ph, 50);
+	printf("pageHeaderStr in next is: %s\n", pageHeaderStr);
+	deserializePageHeader(pageHeaderStr, pageHeader);
+
+	if (currentRID.slot > pageHeader->recordCount) {
+		return RC_RM_NO_MORE_TUPLES;
+	}
+
+	int i;
+	for (i = currentRID.slot; i < pageHeader->recordCount; i++) {
+		RID fetchRId;
+		fetchRId.page = currentRID.page;
+		fetchRId.slot = i;
+		// currentRID.slot = i;
+		RC fetch = getRecord(scan->rel, fetchRId, record);
+
+		if (fetch != RC_RM_NO_MORE_TUPLES) {
+			evalExpr(record, scan->rel->schema, scanInfo->cond, &value);
+			printf("value is %d\n", value->v.boolV);
+			if (value->v.boolV == 1) {
+				// memcpy(record, r, sizeof(Record));
+				printf("in next: %s\n", serializeRecord(record, scan->rel->schema));
+				scanInfo->curRID.slot = fetchRId.slot+1;
+				printf("current position is %d\n", scanInfo->curRID.slot);
+				printf("%p\n", record);
+
+				free(ph);
+				closePageFile(&fh);
+				free(pageHeader);
+				free(pageHeaderStr);
+				return RC_OK;
+			}
+		}
+	}
+
+	free(ph);
+	closePageFile(&fh);
+	free(pageHeader);
+	free(pageHeaderStr);
+
+	return RC_RM_NO_MORE_TUPLES;
 }
 RC closeScan (RM_ScanHandle *scan) {
 	return RC_OK;
@@ -422,8 +504,20 @@ RC closeScan (RM_ScanHandle *scan) {
 
 // dealing with schemas
 int getRecordSize (Schema *schema) {
+	int schemaLength= 0;
+	int i;
+	for (i = 0; i < schema->numAttr; i++) {
+		if (schema->dataTypes[i] == DT_STRING) {
+		schemaLength+= schema->typeLength[i];
+		}
+		else {
+		schemaLength+= sizeof(int);
+		}
+	}
+	// return schemaLength;
 	return 0;
 }
+
 Schema *createSchema (int numAttr, char **attrNames, DataType *dataTypes, int *typeLength, int keySize, int *keys) {
 	Schema *schema = (Schema *)malloc(sizeof(Schema));
 
@@ -461,6 +555,7 @@ int schemaLength(Schema *schema) {
 RC createRecord (Record **record, Schema *schema) {
 	// Reference for why use double pointer here.
 	// http://stackoverflow.com/questions/5580761/why-use-double-pointer-or-why-use-pointers-to-pointers
+	// int recordLength = schemaLength(schema);
 	int recordLength = schemaLength(schema);
 
 	*record = (Record *)malloc(sizeof(Record));

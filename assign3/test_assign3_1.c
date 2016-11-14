@@ -1,9 +1,7 @@
 #include <stdlib.h>
-#include <string.h>
 #include "dberror.h"
 #include "expr.h"
 #include "record_mgr.h"
-#include "storage_mgr.h"
 #include "tables.h"
 #include "test_helper.h"
 
@@ -78,63 +76,14 @@ int
 main (void)
 {
   testName = "";
-	// printf("%d\n", 100/3);
-	// printf("size of char %d\n", sizeof(char));
-	// printf("size of int %d\n", sizeof(int));
-	// RM_TableData *rel;
-	// char *s = generateTableInfo(rel);
-	// char *token;
-	// token = strtok(s, "&");
-	// int i = 0;
-	// while (token != NULL)
-	// {
-	// 	printf ("%d, %s\n",i, token);
-	// 	token = strtok (NULL, "&");
-	// 	i++;
-	// }
-	// printf("%s\n", token);
-	// puts(s);
 
-  testInsertManyRecords();
+  // testInsertManyRecords();
   // testRecords();
-  // testCreateTableAndInsert();
+  testCreateTableAndInsert();
   // testUpdateTable();
   // testScans();
   // testScansTwo();
   // testMultipleScans();
-
-	// Schema *schema = testSchema();
-	// createTable("test_table", schema);
-
-  // RM_TableData *rel = (RM_TableData *) malloc(sizeof(RM_TableData));
-	// TestRecord expected[] = {
-	// 	{1, "aaaa", 3},
-	// };
-	// Record *r;
-	// Value *value;
-	//
-	// openTable(rel, "test_table");
-	//
-	// Schema *schema = rel->schema;
-	// r = fromTestRecord(schema, expected[0]);
-
-	// getAttr(r, schema, 1, &value);
-
-	// insertRecord(rel, r);
-	// printf("r=%s\n", r->data);
-	// printf("==%s\n", serializeValue(value));
-	// printf("%s", serializeRecord(r, schema));
-
-	// printf("%s\n", serializeSchema(schema));
-	// SM_FileHandle fh;
-	// SM_PageHandle ph;
-	// ph = (SM_PageHandle) malloc(PAGE_SIZE);
-	//
-	// openPageFile("test_table", &fh);
-	// readBlock(0, &fh, ph);
-	// printf("%s\n", ph);
-	//
-	// parseTableHeader(NULL, ph);
 
   return 0;
 }
@@ -222,6 +171,10 @@ testCreateTableAndInsert (void)
       int pos = rand() % numInserts;
       RID rid = rids[pos];
       TEST_CHECK(getRecord(table, rid, r));
+			printf("1. %s\n", serializeRecord(fromTestRecord(schema, inserts[pos]), schema));
+			printf("data %s\n", fromTestRecord(schema, inserts[pos])->data);
+			printf("2. %s\n", serializeRecord(r, schema));
+			printf("data %s\n", r->data);
       ASSERT_EQUALS_RECORDS(fromTestRecord(schema, inserts[pos]), r, schema, "compare records");
     }
 
@@ -437,7 +390,6 @@ testInsertManyRecords(void)
       realInserts[i] = inserts[i%10];
       realInserts[i].a = i;
       r = fromTestRecord(schema, realInserts[i]);
-			printf("???\n");
       TEST_CHECK(insertRecord(table,r));
       rids[i] = r->id;
     }
@@ -449,8 +401,6 @@ testInsertManyRecords(void)
     {
       RID rid = rids[i];
       TEST_CHECK(getRecord(table, rid, r));
-			printf("r = %s\n", serializeRecord(r, schema));
-			printf("expected is %s\n", serializeRecord(fromTestRecord(schema, realInserts[i]), schema));
       ASSERT_EQUALS_RECORDS(fromTestRecord(schema, realInserts[i]), r, schema, "compare records");
     }
 
@@ -505,60 +455,48 @@ void testScans (void)
   rids = (RID *) malloc(sizeof(RID) * numInserts);
 
   TEST_CHECK(initRecordManager(NULL));
-  // TEST_CHECK(createTable("test_table_r",schema));
+  TEST_CHECK(createTable("test_table_r",schema));
   TEST_CHECK(openTable(table, "test_table_r"));
 
-	// int i;
-
-	r = (Record *)malloc(sizeof(Record));
-	for (i = 0; i < numInserts; i++) {
-		RID rid;
-		rid.page = 1;
-		rid.slot = i;
-		getRecord(table, rid, r);
-		printf("%s\n", r->data+4);
-		printf("%s\n", serializeRecord(r, schema));
-	}
-
   // insert rows into table
-  // for(i = 0; i < numInserts; i++)
-  // {
-  //     r = fromTestRecord(schema, inserts[i]);
-  //     TEST_CHECK(insertRecord(table,r));
-  //     rids[i] = r->id;
-  // }
+  for(i = 0; i < numInserts; i++)
+  {
+      r = fromTestRecord(schema, inserts[i]);
+      TEST_CHECK(insertRecord(table,r));
+      rids[i] = r->id;
+  }
 
   TEST_CHECK(closeTable(table));
-  // TEST_CHECK(openTable(table, "test_table_r"));
-	//
-  // // run some scans
+  TEST_CHECK(openTable(table, "test_table_r"));
+
+  // run some scans
   MAKE_CONS(left, stringToValue("i1"));
   MAKE_ATTRREF(right, 2);
   MAKE_BINOP_EXPR(sel, left, right, OP_COMP_EQUAL);
-	//
-  // TEST_CHECK(startScan(table, sc, sel));
-  // while((rc = next(sc, r)) == RC_OK)
-  // {
-  //     for(i = 0; i < scanSizeOne; i++)
-  //     {
-  //         if (memcmp(fromTestRecord(schema, scanOneResult[i])->data,r->data,getRecordSize(schema)) == 0)
-  //             foundScan[i] = TRUE;
-  //     }
-  // }
-  // if (rc != RC_RM_NO_MORE_TUPLES)
-  //   TEST_CHECK(rc);
-  // TEST_CHECK(closeScan(sc));
-  // for(i = 0; i < scanSizeOne; i++)
-  //   ASSERT_TRUE(foundScan[i], "check for scan result");
-	//
-  // // clean up
-  // TEST_CHECK(closeTable(table));
-  // TEST_CHECK(deleteTable("test_table_r"));
+
+  TEST_CHECK(startScan(table, sc, sel));
+  while((rc = next(sc, r)) == RC_OK)
+  {
+      for(i = 0; i < scanSizeOne; i++)
+      {
+          if (memcmp(fromTestRecord(schema, scanOneResult[i])->data,r->data,getRecordSize(schema)) == 0)
+              foundScan[i] = TRUE;
+      }
+  }
+  if (rc != RC_RM_NO_MORE_TUPLES)
+    TEST_CHECK(rc);
+  TEST_CHECK(closeScan(sc));
+  for(i = 0; i < scanSizeOne; i++)
+    ASSERT_TRUE(foundScan[i], "check for scan result");
+
+  // clean up
+  TEST_CHECK(closeTable(table));
+  TEST_CHECK(deleteTable("test_table_r"));
   TEST_CHECK(shutdownRecordManager());
 
   free(table);
   free(sc);
-  // freeExpr(sel);
+  freeExpr(sel);
   TEST_DONE();
 }
 
@@ -707,8 +645,6 @@ testSchema (void)
 
   result = createSchema(3, cpNames, cpDt, cpSizes, 1, cpKeys);
 
-	printf("result %p\n", result);
-
   return result;
 }
 
@@ -727,7 +663,6 @@ testRecord(Schema *schema, int a, char *b, int c)
   TEST_CHECK(createRecord(&result, schema));
 
   MAKE_VALUE(value, DT_INT, a);
-
   TEST_CHECK(setAttr(result, schema, 0, value));
   freeVal(value);
 

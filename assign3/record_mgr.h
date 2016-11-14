@@ -16,7 +16,7 @@ typedef struct RM_ScanHandle
 
 typedef struct ScanInfo {
   Expr *cond;
-	RID *curRID;
+	RID curRID;
 } ScanInfo;
 
 

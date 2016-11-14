@@ -96,7 +96,7 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 	off_t fsize;
 	fsize = lseek(fd, 0, SEEK_END);
 
-	printf("size is :%llu\n", fsize);
+	// printf("size is :%llu\n", fsize);
 
 
 	// assign values to fileName, totalNumPages, and initialize current page
@@ -106,7 +106,7 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 	fHandle->curPagePos = 0;
 
 
-	printf("%d\n", fHandle->totalNumPages);
+	// printf("%d\n", fHandle->totalNumPages);
 
 	return RC_OK;
 }
@@ -317,11 +317,8 @@ RC writeBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
 	off_t offset = pageNum * PAGE_SIZE;
 
 	if (pwrite(md, memPage, PAGE_SIZE, offset) > 0 ) {
-		printf("write to block [%s]\n", memPage);
+		// printf("write to block [%s]\n", memPage);
 		return RC_OK;
-	}
-	else {
-		puts("why??????");
 	}
 	return RC_WRITE_FAILED;
 

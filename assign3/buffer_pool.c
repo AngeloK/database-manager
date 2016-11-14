@@ -20,7 +20,7 @@ Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
   Buffer_Storage *bs;
   bs = (Buffer_Storage *)malloc(sizeof(Buffer_Storage));
   bs->pool = pool;
-  
+
   //Init hash, it's important when tesing in server end.
   int i;
   for (i = 0; i < 65535; i++) {
@@ -30,15 +30,15 @@ Buffer_Storage *initBufferStorage(char *pageFileName, int capacity) {
 }
 
 Queue *createQueue(int capacity) {
-  
-  printf("queue size %d\n", capacity);
+
+  // printf("queue size %d\n", capacity);
   Queue* queue = (Queue *)malloc(sizeof(Queue));
 
   // Initialize queue as empty.
   queue->count = 0;
   queue->front = queue->rear = NULL;
 
-  // The capacity of buffer pool. 
+  // The capacity of buffer pool.
   queue->q_capacity = capacity;
   queue->readIO = 0;
   queue->writeIO = 0;
@@ -62,7 +62,7 @@ int isPoolFull(BM_BufferPool *bm) {
   Buffer_Storage *bs = (Buffer_Storage*)bm->mgmtData;
   Queue *q = bs->pool;
   if(q->count==q->q_capacity){
-    printf("in isPoolFull %d, %d\n", q->q_capacity, q->count);
+    // printf("in isPoolFull %d, %d\n", q->q_capacity, q->count);
     return 1;
   }
   else{
@@ -73,7 +73,7 @@ int isPoolFull(BM_BufferPool *bm) {
 int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added){
     // If all frames are full, remove the page at the rear
     if (queue->count == queue->q_capacity){
-      
+
       int replaced;
       enQueue(queue, added);
       replaced = deQueue(queue);
@@ -81,7 +81,7 @@ int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Pag
       added->index = index;
       return replaced;
     }
-    
+
     else {
       enQueue(queue, added);
     }
@@ -90,9 +90,9 @@ int ReplacementFIFO(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Pag
 
 
 int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page_Frame *added) {
-  
+
     if (queue->count >= queue->q_capacity){
-      
+
       int replaced;
       enQueue(queue, added);
       replaced = deQueue(queue);
@@ -100,19 +100,19 @@ int ReplacementLRU(Queue *queue, Page_Frame **mapping, Page_Frame *removed, Page
       added->index = index;
       return replaced;
     }
-    
+
     else {
       enQueue(queue, added);
     }
-    return -1;  
-  
+    return -1;
+
 }
 
 
 int enQueue(Queue *queue, Page_Frame *added) {
 
   if (queue->count == 0) {
-    printf("queue is empty\n");
+    // printf("queue is empty\n");
     queue->rear = queue->front = added;
     added->index = 0;
   }
@@ -140,7 +140,7 @@ int printQueueElement(Queue *queue) {
   }
   printf("===pool end====\n");
   return 1;
-} 
+}
 
 
 
@@ -149,8 +149,8 @@ int printQueueElement(Queue *queue) {
 Page_Frame *checkRemoved(Queue *queue) {
   Page_Frame *removedAvaiable = NULL;
   Page_Frame *temp = queue->front;
-  
-  
+
+
   while(temp) {
     if (temp->fix_count == 0) {
       removedAvaiable = temp;
@@ -181,23 +181,23 @@ int isRear(Queue *queue, Page_Frame *pf) {
 
 void removeFromQueue(Queue *queue, Page_Frame *pf) {
   if (isFront(queue, pf)){
-    printf("remove node from front, it's %d\n", pf->pageHandle->pageNum);
-    
+    // printf("remove node from front, it's %d\n", pf->pageHandle->pageNum);
+
     queue->front = queue->front->next;
   }
   else if (isRear(queue, pf)){
-    printf("remove node from rear\n");
+    // printf("remove node from rear\n");
     queue->rear = queue->rear->prev;
   }
   else {
-    printf("removed node from middle\n");
+    // printf("removed node from middle\n");
     Page_Frame *temp = pf;
-    
+
     temp->prev->next = pf->next;
     temp->next->prev = pf->prev;
-    
+
     free(temp);
-    
+
   }
 }
 
@@ -207,8 +207,8 @@ int deQueue( Queue *queue )
     // queue is empty.
     if(queue->count == 0)
         return -1;
-    
-    // if the none of elements in queue has fix_count=0, 
+
+    // if the none of elements in queue has fix_count=0,
     // then buffer pool is busy, we can not replace elements.
     Page_Frame *removedPF;
     removedPF = checkRemoved(queue);
@@ -224,7 +224,7 @@ int deQueue( Queue *queue )
           queue->front = NULL;
           queue->rear = NULL;
       }
-      else 
+      else
         removeFromQueue(queue, removedPF);
       // free(temp);
       queue->count--;

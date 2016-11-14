@@ -2,6 +2,8 @@
 #define TABLES_H
 
 #include "dt.h"
+#include "buffer_mgr.h"
+#include "expr.h"
 
 // Data Types, Records, and Schemas
 typedef enum DataType {
@@ -52,6 +54,29 @@ typedef struct RM_TableData
 } RM_TableData;
 
 
+typedef struct Table_Header {
+	int tableCapacity;
+	int pageCount;
+	char *lastAccessed;
+	int totalRecordCount;
+	int recordsPerPage;
+	RID *freePointer;
+	BM_BufferPool *bm;
+	// int *offsets;
+	// int maxRecords;
+} Table_Header;
+
+
+typedef struct Page_Header {
+	int pageId;
+	bool isFull;    // true or false;
+	int freeSlot;  // -1 if the page is full.
+	int recordCount;
+	int recordCapacity;
+	// struct Page_Header *prev;
+	// struct Page_Header *next;
+	// RID **mapping;
+} Page_Header;
 
 #define MAKE_STRING_VALUE(result, value)				\
   do {									\

@@ -6,6 +6,7 @@
 /* module wide constants */
 #define PAGE_SIZE 4096
 #define PAGE_FILE_CAP 1000
+#define TOTAL_PAGES 1000
 
 /* return code definitions */
 typedef int RC;

@@ -1,9 +1,9 @@
 end: recordManager clean
 
-recordManager:test_assign3_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_mgr_stat.o expr.o buffer_pool.o record_mgr.o table_mgr.o
-	gcc -g test_assign3_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_mgr_stat.o expr.o buffer_pool.o record_mgr.o table_mgr.o -o recordManager
+recordManager:test_assign3_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_mgr_stat.o expr.o buffer_pool.o record_mgr.o
+	gcc -g test_assign3_1.o dberror.o storage_mgr.o buffer_mgr.o buffer_mgr_stat.o expr.o buffer_pool.o record_mgr.o -o recordManager
 
-test_assign3_1.o :test_assign3_1.c test_helper.h dberror.h storage_mgr.h buffer_mgr.h buffer_pool.h buffer_mgr_stat.h expr.h record_mgr.h tables.h table_mgr.h
+test_assign3_1.o :test_assign3_1.c test_helper.h dberror.h storage_mgr.h buffer_mgr.h buffer_pool.h buffer_mgr_stat.h expr.h record_mgr.h tables.h
 	gcc -c test_assign3_1.c
 
 dberror.o:dberror.c dberror.h
@@ -23,9 +23,6 @@ buffer_pool.o:buffer_pool.c buffer_pool.h
 
 expr.o:expr.c expr.h
 	gcc -c expr.c
-
-table_mgr.o:table_mgr.c table_mgr.h
-	gcc -c table_mgr.c
 
 buffer_mgr.o:buffer_mgr.c buffer_mgr.h
 	gcc -c buffer_mgr.c

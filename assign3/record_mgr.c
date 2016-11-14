@@ -96,7 +96,7 @@ RC freeRecord(Record *record)
  *
  *
  */
-RC getAttr(Record *record, Schema *schema, int attrNum, Value **value){
+/*RC getAttr(Record *record, Schema *schema, int attrNum, Value **value){
     
     int position = 0;
     int index = 0;
@@ -184,6 +184,6 @@ RC setAttr(Record *record, Schema *schema, int attrNum, Value *value) {
     return RC_OK;
 
     
-}
+}*/
 
 

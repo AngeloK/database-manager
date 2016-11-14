@@ -281,10 +281,10 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	tableHeader->totalRecordCount++;
 	// update table header.
 	readBlock(0, &fh, ph);
-	printf("table header is %s\n", ph);
+	// printf("table header is %s\n", ph);
 
 	char *tableHeaderStr = generateTableInfo(rel);
-	printf("updated table header: %s\n", tableHeaderStr);
+	// printf("updated table header: %s\n", tableHeaderStr);
 	memcpy(ph, tableHeaderStr, strlen(tableHeaderStr));
 	writeBlock(0, &fh, ph);
 
@@ -300,6 +300,7 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	free(updatedHeader);
 	free(updatedHeaderStr);
 	free(header);
+	free(tableHeaderStr);
 	free(ph);
 	closePageFile(&fh);
   return RC_OK;
@@ -329,7 +330,7 @@ RC updateRecord (RM_TableData *rel, Record *record) {
 		freeVal(value);
 	}
 
-	printf("changed record %s\n", serializeRecord(r, rel->schema));
+	// printf("changed record %s\n", serializeRecord(r, rel->schema));
 
 	for (i = 0; i < rel->schema->numAttr; i++) {
 		getAttr(r, rel->schema, i, &value);
@@ -350,8 +351,8 @@ RC updateRecord (RM_TableData *rel, Record *record) {
 	readBlock(record->id.page, &fh, ph);
 	strncpy(ph+offset, result->buf, schemaLength(rel->schema));
 	writeBlock(record->id.page, &fh, ph);
-	printf("ph+offset %s\n", ph+offset);
-	printf("ph+offset+12 %s\n", ph+offset+12);
+	// printf("ph+offset %s\n", ph+offset);
+	// printf("ph+offset+12 %s\n", ph+offset+12);
 	closePageFile(&fh);
 	free(ph);
 	FREE_VARSTRING(result);

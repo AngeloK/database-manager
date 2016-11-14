@@ -561,48 +561,49 @@ RC getAttr (Record *record, Schema *schema, int attrNum, Value **value) {
 	switch (schema->dataTypes[attrNum]) {
 		case DT_INT:
 			(*value)->dt = DT_INT;
-			(*value)->v.intV = atoi(valueFromRecord); // get int value from string.
+			memcpy(&((*value)->v.intV), valueFromRecord, sizeof(int));
 			break;
 		case DT_STRING:
 			(*value)->dt = DT_STRING;
 			int stringLength = schema->typeLength[attrNum];
-
-			// Allocate space.
-			(*value)->v.stringV = (char *)malloc(stringLength);
+			(*value)->v.stringV = (char *)malloc(sizeof(char) * stringLength + 1);
+			// // Allocate space.
 			strncpy((*value)->v.stringV, valueFromRecord, stringLength);
+			(*value)->v.stringV[stringLength] = '\0';
 			break;
 		case DT_BOOL:
 			(*value)->dt = DT_BOOL;
-
-			// TODO assign bool value.
-			// (*value)->v.boolV = transferTo(valueFromRecord, DT_BOOL);
-			// (*value)->v.boolV = NULL;
+			memcpy(&((*value)->v.boolV), valueFromRecord, sizeof(bool));
 			break;
 		case DT_FLOAT:
 			(*value)->dt = DT_FLOAT;
-			// TODO assign float value.
-			// (*value)->v.floatV = NULL;
+			memcpy(&((*value)->v.floatV), valueFromRecord, sizeof(float));
 			break;
 	}
 
-	// if ((*value)->dt == DT_STRING) {
-	// 	printf("value final is %s\n", (*value)->v.stringV );
-	// }
   return RC_OK;
 }
-RC setAttr (Record *record, Schema *schema, int attrNum, Value *value) {
-	int offset;
-	char *result = serializeValue(value);
 
-	if (attrOffset(schema, attrNum, &offset) == 0) {
-			strcpy(record->data+offset, result);
-		  return RC_OK;
-	}
-	else {
-		// error.
-		return -1;
-	}
+RC setAttr (Record *record, Schema *schema, int attrNum, Value *value){
+		int offset;
+    attrOffset(schema, attrNum, &offset);
+		char *result = record->data+offset;
 
+		switch (value->dt) {
+			case DT_INT:
+				memcpy(result, &(value->v.intV) ,sizeof(int));
+				break;
+			case DT_STRING:
+				memcpy(result, value->v.stringV, schema->typeLength[attrNum]);
+				break;
+			case DT_FLOAT:
+				memcpy(result, &(value->v.floatV) ,sizeof(float));
+				break;
+			case DT_BOOL:
+				memcpy(result, &(value->v.boolV) ,sizeof(bool));
+				break;
+		}
+		return RC_OK;
 }
 
 

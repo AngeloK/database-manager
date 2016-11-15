@@ -12,6 +12,20 @@ typedef struct RM_ScanHandle
   void *mgmtData;
 } RM_ScanHandle;
 
+typedef struct List {
+	RID *id;
+	struct List *next;
+} Node;
+
+typedef struct TableMgmt {	
+	int record_count;
+	int page_count;
+	BM_BufferPool *bm;
+	int records_per_page;
+	Node *reusable_head;
+	Node *reusable_tail;
+} TableMgmt;
+
 // table and manager
 extern RC initRecordManager (void *mgmtData);
 extern RC shutdownRecordManager ();

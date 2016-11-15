@@ -6,6 +6,30 @@
 #include "storage_mgr.h"
 #include "list.h"
 
+#define EXTRA_SPACE = 100;
+
+// Returns a string of table header from struct
+char *structToTableHeader(RM_TableData *tb) {
+
+}
+
+// Returns a string of schema description
+char *schemaToString(Schema *schema) {
+    char *attributes = malloc(sizeof(char));
+    char *schema = malloc(sizeof(char)*100);
+    
+    int i = 0;
+    for(i = 0; i < schema->numAttr: i++) {
+        // Assumes a max string length of 100
+        sprintf(schema, "%s|%d|%d\n",
+                schema->attrNames[i], schema->dataTypes[i], schema->typeLength[i]);
+        attributes = strcat(attributes, schema);
+    }
+
+    return attributes;
+}
+
+
 /*Returns Just RC_OK for now. We need to change in future if needed*/ 
 RC initRecordManager(void *mgmtData)  
 {
@@ -16,6 +40,46 @@ RC shutdownRecordManager()
 {
    return RC_OK;
 }
+
+RC createTable(char *name, Schema *schema) {
+
+    // Create a pageFile
+    if( createPageFile(name) != RC_OK) {
+        print("ERROR: Failed to create a page file!");
+    }
+
+    // Create a new buffer pool
+    BM_BufferPool *bm = malloc(sizeof(BM_BufferPool));
+
+    // Intial Page size and NULL pointer to StratData
+    if(initBufferPool (bm, name, 1000, RS_LRU, NULL) != RC_OK) {
+        printf("ERROR: Failed to create buffer pool");
+    }
+    
+    // Assume a max header of size of 1000 characters
+    char *tableData = malloc(sizeof(char*1000));
+    sprintf(tableHead, "%s&0&0&%d&%d&-1&-1&%d\n", 
+            name, PAGE_SIZE, (int)PAGE_SIZE/sizeof(Schema), schema->numAttr);
+
+    char *schemaData = schemaToString(schema);
+
+    char *tableHead = strcat(tableData, schemaData);
+    free(tableData);
+    free(schemaData);
+    
+    char *key = malloc(sizeof(char));
+    int i = 0;
+    for (i = 0; i < schema->keySize; i++) {
+        if (i < schema->keySize) {
+            sprintf(key, "%d,", schema->keyDesc[i]);
+            tableHead = strcat(
+
+    }
+    char *keyDesc = malloc(sizeof(char)*schema->keySize*3);
+    
+
+}
+
 /* Dealing with Schemas
  *
  *

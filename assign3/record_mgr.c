@@ -25,7 +25,7 @@ int getRecordSize(Schema *schema)
 {
     int index = 0;
     int size = 0;
-    while(i<schema->numAttr){
+    while(index<schema->numAttr){
         if(schema->dataTypes[index] == DT_INT){
             size = size + sizeof(int);
         }
@@ -96,7 +96,7 @@ RC freeRecord(Record *record)
  *
  *
  */
-/*RC getAttr(Record *record, Schema *schema, int attrNum, Value **value){
+RC getAttr(Record *record, Schema *schema, int attrNum, Value **value){
     
     int position = 0;
     int index = 0;
@@ -183,6 +183,6 @@ RC setAttr(Record *record, Schema *schema, int attrNum, Value *value) {
     return RC_OK;
 
     
-}*/
+}
 
 

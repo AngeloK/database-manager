@@ -134,7 +134,7 @@ RC freeRecord(Record *record)
         length = 0;
         char c = (char *) malloc(sizeof(char) * schema->typeLength[attrNum]);
         memcpy(&length,record->data + position, sizeof(int));
-        memcpy(c, record -> data + position + sizeof(int), length);
+        memcpy(value, record -> data + position + sizeof(int), length);
         c[length] = '\0';
         MAKE_STRING_VALUE(val, c);
         free(c);

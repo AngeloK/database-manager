@@ -132,9 +132,9 @@ RC freeRecord(Record *record)
     }
     else if(schema->dataTypes[attrNum]==DT_STRING){
         length = 0;
-        char c = (char *) malloc(sizeof(char) * schema->typeLength[attrNum]);
+        char *c = (char *) malloc(sizeof(char) * schema->typeLength[attrNum]);
         memcpy(&length,record->data + position, sizeof(int));
-        memcpy(value, record -> data + position + sizeof(int), length);
+        memcpy(c, record -> data + position + sizeof(int), length);
         c[length] = '\0';
         MAKE_STRING_VALUE(val, c);
         free(c);
@@ -176,7 +176,6 @@ RC setAttr(Record *record, Schema *schema, int attrNum, Value *value) {
     }
     else if(schema->dataTypes[attrNum]==DT_STRING){
         int length = strlen(value->v.stringV);
-        char c = (char *) malloc(sizeof(char) * schema->typeLength[attrNum]);
         memcpy(record->data + position,&length, sizeof(int));
         memcpy(record -> data + position + sizeof(int),value->v.stringV, length);
     }

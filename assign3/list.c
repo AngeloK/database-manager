@@ -1,0 +1,77 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
+
+#include "dberror.h"
+#include "dt.h"
+#include "list.h"
+
+
+List *createList(void) {
+	List *l;
+
+	if ((l = (List *)malloc(sizeof(List))) == NULL)
+		return NULL;
+
+	l->head = l->tail = NULL;
+	l->itemCount = 0;
+	l->listCapacity = LISTCAPACITY;
+	l->isFull = false;
+	return l;
+}
+
+
+RC insert(List *l, void *item) {
+	ListNode *node;
+
+	if ( (node = (ListNode *)malloc(sizeof(ListNode))) == NULL ) {
+		// error inserting new node.
+		return -1;
+	}
+	node->value = item;
+
+	if (l->itemCount == 0) {
+		l->head = l->tail = node;
+		node->next = NULL;
+		node->prev = NULL;
+	}
+	else {
+		l->tail->next = node;
+		node->prev = l->tail;
+		l->tail = node;
+		node->next = NULL;
+	}
+	l->itemCount++;
+	return RC_OK;
+}
+
+ListNode *popTail(List *l) {
+	// node ready to be popped out.
+	ListNode *node;
+
+	if (l->itemCount == 0) {
+		// no more item to be poped out.
+		printf("List is empty\n");
+		exit(0);
+	}
+
+	node = l->tail;
+
+	if (l->itemCount == 1) {
+		l->head = l->tail = NULL;
+	}
+
+	else {
+		l->tail = node->prev;
+	}
+	l->itemCount--;
+	return node;
+}
+
+RC releaseList(List *l) {
+	return RC_OK;
+}

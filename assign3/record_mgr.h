@@ -4,6 +4,7 @@
 #include "dberror.h"
 #include "expr.h"
 #include "tables.h"
+#include "list.h"
 // #include "table_mgr.h"
 
 // Bookkeeping for scans
@@ -65,5 +66,7 @@ DataType stringToDatatype(char *token);
 RC initPageHeader(RM_TableData *rel, Page_Header *pageHeader, int pageId);
 Record *deserializeRecord(Schema *schema, char *recordString, RID id);
 RC deserializePageHeader(char *str, Page_Header *pageHeader);
+RID *deserializeTombstoneNode(char *str);
+List *deserializeTombstoneList(char *str);
 
 #endif // RECORD_MGR_H

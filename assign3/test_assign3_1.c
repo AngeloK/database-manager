@@ -5,6 +5,8 @@
 #include "tables.h"
 #include "test_helper.h"
 
+#include "list.h"
+
 
 #define ASSERT_EQUALS_RECORDS(_l,_r, schema, message)			\
   do {									\
@@ -84,16 +86,7 @@ main (void)
   // testScans();
   // testScansTwo();
   // testMultipleScans();
-
-  char s[] = "(3,2)&(4,7)&(9,3)&(3,5)&";
-  char *token;
-  token = strtok(s, "&");
-  // printf("token is %s\n", token);
-  while(token != NULL) {
-    printf("token is %s\n", token);
-    token = strtok(NULL, "&");
-  }
-
+	List *l = deserializeTombstoneList("abc");
   return 0;
 }
 

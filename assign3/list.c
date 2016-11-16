@@ -74,6 +74,22 @@ ListNode *popTail(List *l) {
 	return node;
 }
 
+void printList(List *l) {
+	if (l->itemCount == 0) {
+		printf("List is empty\n");
+		exit(0);
+	}
+	ListNode *node = l->head;
+	RID *id;
+	printf("### List (size=%d)###\n", l->itemCount);
+	while(node != NULL) {
+		id = (RID *)node->value;
+		printf("page=%d, slot=%d\n", id->page, id->slot);
+		node = node->next;
+	}
+	printf("### End ###\n");
+}
+
 RC releaseList(List *l) {
 	return RC_OK;
 }

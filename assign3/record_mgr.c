@@ -915,3 +915,55 @@ Record *deserializeRecord(Schema *schema, char *recordString, RID id) {
 
 	return record;
 }
+
+RID *deserializeTombstoneNode(char *str) {
+	RID *r;
+	char *new = (char *)malloc(sizeof(strlen(str)));
+	strcpy(new, str);
+	if (((r = (RID *)malloc(sizeof(RID))) == NULL)) {
+		printf("Creating tombstone node fails\n");
+		return NULL;
+	}
+	// // char s[] = "(3,2)";
+	int page, slot;
+	char *token;
+	//
+	token = strchr(new, '(');
+	if (!token) {
+		printf("parse tombstone string error\n");
+		return NULL;
+	}
+	*token = '\0';
+	token++;
+	char *p = strchr(token, ')');
+	*p = '\0';
+
+	char *s;
+	int result[2];
+	int i = 0;
+	while ((s = strsep(&token, ",")) != NULL) {
+		result[i] = atoi(s);
+		i++;
+	}
+	r->page = result[0];
+	r->slot = result[1];
+	free(new);
+	return r;
+}
+
+List *deserializeTombstoneList(char *str) {
+	char s[] = "(3,2)&(4,7)&(9,3)&(3,5)&";
+  char *token;
+  token = strtok(s, "&");
+	List *l = createList();
+	RID *r;
+  while(token != NULL) {
+		r = deserializeTombstoneNode(token);
+		insert(l, r);
+    token = strtok(NULL, "&");
+  }
+	printList(l);
+
+	return l;
+
+}

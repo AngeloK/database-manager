@@ -26,4 +26,5 @@ List *createList(void);
 RC insert(List *l, void *item);
 ListNode *popTail(List *l);
 RC releaseList(List *l);
+void printList(List *l);
 #endif

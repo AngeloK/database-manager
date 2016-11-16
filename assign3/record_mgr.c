@@ -17,7 +17,6 @@
 #include "expr.h"
 #include "rm_serializer.c"
 #include "list.h"
-// #include "table_mgr.h"
 
 // table and manager
 RC initRecordManager (void *mgmtData) {
@@ -63,6 +62,9 @@ RC createTable (char *name, Schema *schema) {
 	h->data = generateTableInfo(table);
 	markDirty(bm, h);
 	unpinPage(bm, h);
+
+
+	//write tombstone list into the second page of table file.
 
 	pinPage(bm, h, 1);
 
@@ -166,6 +168,9 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	RID *freePointer = tableHeader->freePointer;
 	RID *rid = (RID  *)malloc(sizeof(RID));
 
+
+	// TODO check primiary key.
+
 	SM_FileHandle fh;
 	SM_PageHandle ph;
 	ph = (SM_PageHandle) malloc(PAGE_SIZE);
@@ -178,6 +183,10 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	Value *value;
   VarString *result;
   MAKE_VARSTRING(result);
+
+
+	// TODO select rid in tombstone list first instead of find the first
+	// empty slot.
 
 
 	for (i = 0; i < rel->schema->numAttr; i++) {
@@ -269,6 +278,7 @@ RC deleteRecord (RM_TableData *rel, RID id) {
 	tstone_id->page = id.page;
 	tstone_id->slot = id.slot;
 	if (insert(tableHeader->tombstone, tstone_id) == 0 ) {
+		// TODO update header and tombstone.
 		// update relative page header.
 		//
 		// update tombstone stored in table file.
@@ -689,7 +699,6 @@ RC deserializePageHeader(char *str, Page_Header *pageHeader) {
 char *generatePageHeader(RM_TableData *rel, Page_Header *pageHeader) {
 	VarString *result;
 	MAKE_VARSTRING(result);
-	// TODO Complete page header functions.
 
 	APPEND(result, "%d", pageHeader->pageId);
 	// APPEND(result, "%d", 1);
@@ -756,7 +765,7 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 	DataType dataTypes[numAttr];
 	int typeLength[numAttr];
 	int keyAttrs[numAttr];
-	// TODO what's 'keySize'?
+	// TODO primary key used for primary key check.
 	int keySize = 1;
 	int keys[] = {0};
 	i = 0;
@@ -813,8 +822,8 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 	freePointer->page = atoi(tableAttrs[5]);
 	freePointer->slot = atoi(tableAttrs[6]);
 	tableHeader->lastAccessed = tableAttrs[7];
-  // TODO apply tombstone in record manager.
-  tableHeader->tombstone = createList();
+
+  // tableHeader->tombstone = createList();
 
 	tableHeader->freePointer = freePointer;
 

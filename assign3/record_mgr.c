@@ -16,6 +16,7 @@
 #include "tables.h"
 #include "expr.h"
 #include "rm_serializer.c"
+#include "list.h"
 // #include "table_mgr.h"
 
 // table and manager
@@ -111,6 +112,19 @@ RC openTable (RM_TableData *rel, char *name) {
  * @return     RC_OK
  */
 RC closeTable (RM_TableData *rel) {
+	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+
+	ListNode *head = tableHeader->tombstone->head;
+
+	RID *id;
+
+	while(head->next) {
+		id = (RID *)head->value;
+		printf("is page is %d\n", id->page);
+		printf("is slot is %d\n", id->slot);
+		printf("====");
+		head = head->next;
+	}
 
   // close table and free memeory.
   freeSchema(rel->schema);
@@ -237,7 +251,6 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	// free(header);
 	// free(tableHeaderStr);
 	// free(ph);
-	// puts("insert end");
   return RC_OK;
 }
 
@@ -251,7 +264,17 @@ RC deleteRecord (RM_TableData *rel, RID id) {
   // define r;
   // getRecord(rel, id, r);
   // mark r as deleted.
-  return RC_OK;
+  Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+	RID *tstone_id = (RID *)malloc(sizeof(RID));
+	tstone_id->page = id.page;
+	tstone_id->slot = id.slot;
+	if (insert(tableHeader->tombstone, tstone_id) == 0 ) {
+		// update relative page header.
+		//
+		// update tombstone stored in table file.
+		return RC_OK;
+	}
+	return -1;
 }
 RC updateRecord (RM_TableData *rel, Record *record) {
   // define a new r;
@@ -291,6 +314,7 @@ RC updateRecord (RM_TableData *rel, Record *record) {
 	free(ph);
 	FREE_VARSTRING(result);
 	free(r);
+
 	return RC_OK;
 }
 RC getRecord(RM_TableData *rel, RID id, Record *record) {
@@ -789,6 +813,8 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 	freePointer->page = atoi(tableAttrs[5]);
 	freePointer->slot = atoi(tableAttrs[6]);
 	tableHeader->lastAccessed = tableAttrs[7];
+  // TODO apply tombstone in record manager.
+  tableHeader->tombstone = createList();
 
 	tableHeader->freePointer = freePointer;
 

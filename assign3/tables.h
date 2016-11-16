@@ -3,7 +3,8 @@
 
 #include "dt.h"
 #include "buffer_mgr.h"
-#include "expr.h"
+// #include "expr.h"
+#include "list.h"
 
 // Data Types, Records, and Schemas
 typedef enum DataType {
@@ -64,6 +65,7 @@ typedef struct Table_Header {
 	BM_BufferPool *bm;
 	// int *offsets;
 	// int maxRecords;
+	List *tombstone;
 } Table_Header;
 
 

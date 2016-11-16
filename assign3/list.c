@@ -9,6 +9,7 @@
 #include "dberror.h"
 #include "dt.h"
 #include "list.h"
+#include "tables.h"
 
 
 List *createList(void) {
@@ -27,6 +28,7 @@ List *createList(void) {
 
 RC insert(List *l, void *item) {
 	ListNode *node;
+	RID *id = (RID *)item;
 
 	if ( (node = (ListNode *)malloc(sizeof(ListNode))) == NULL ) {
 		// error inserting new node.

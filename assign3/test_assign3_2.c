@@ -356,6 +356,8 @@ void testPrimaryKeyCheck(void) {
 			ASSERT_EQUALS_RECORDS(fromTestRecord(schema, finalR[i]), r, schema, "compare records");
 		}
 
+
+	  TEST_CHECK(deleteTable("test_table_r"));
 	  TEST_CHECK(deleteTable("test_table_r"));
 	  TEST_CHECK(shutdownRecordManager());
 

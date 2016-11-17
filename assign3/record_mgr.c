@@ -16,7 +16,8 @@ char *structToTableHeader(RM_TableData *tb) {
 
 // Returns a string of schema description
 char *schemaToString(Schema *schema) {
-    char *schemaString = malloc(sizeof(char));
+    char *schemaString = malloc(sizeof(char)*5);
+    sprintf(schemaString, "%d|", schema->numAttr);
     if(!schemaString) {
         printf("MEMORY ERROR: Could not allocate to schema string\n");
         exit(1);
@@ -74,8 +75,32 @@ char *schemaToString(Schema *schema) {
     return schemaString;
 }
 
-void printTableData(RM_TableData *rel);
+void printTableData(RM_TableData *rel) {
+    printf("NAME:%s\n", rel->name);
+   
+    TableMgmt *tm = (TableMgmt *) rel->mgmtData;
+    printf("Record Count:%d\n", tm->record_count);
+    printf("Page Count:%d\n", tm->page_count);
+    printf("Records Count Page:%d\n", tm->records_per_page);
+    printf("Reusable Head:%d\n", tm->reusable_head);
+    printf("Reusable Tail:%d\n", tm->reusable_tail);
 
+    Schema *s = rel->schema;
+    printf("Attributes:%d\n", s->numAttr);
+    int i = 0;
+    for (i = 0; i < s->numAttr; i++) {
+        printf("%s %d %d\n", s->attrNames[i], s->dataTypes[i], s->typeLength[i]);
+    }
+
+    for (i = 0; i < s->keySize; i++) {
+        printf("(");
+        if (i != s->keySize-1) {
+            printf("%d,", s->keyAttrs[i]);
+        } else {
+            printf("%d)", s->keyAttrs[i]);
+        }
+    }
+}
 
 /*Returns Just RC_OK for now. We need to change in future if needed*/ 
 RC initRecordManager(void *mgmtData)  
@@ -118,8 +143,8 @@ RC createTable(char *name, Schema *schema) {
         printf("ERROR: Memory allocation for table data failed");
         exit(1);
     }
-    sprintf(tableData, "%s|0|0|%d|-1|-1|%d|", 
-            name, (int)(PAGE_SIZE/sizeof(Schema)), schema->numAttr);
+    sprintf(tableData, "%s|0|0|%d|-1|-1|", 
+            name, (int)(PAGE_SIZE/sizeof(Schema)));
 
     char *schemaData = schemaToString(schema);
     
@@ -209,33 +234,71 @@ RC openTable(RM_TableData *rel, char *name) {
     return RC_OK;
 }
 
-void printTableData(RM_TableData *rel) {
-    printf("NAME:%s\n", rel->name);
-   
+
+/*
+ * table_name|record_count|page_count|page_capacity|records_per_page|resuable_head|resuable_tail|<schema>
+ * <schema>: attrName|dataType|typeLength|...|key1, key2...\n
+ *
+ */
+RC closeTable (RM_TableData *rel) {
     TableMgmt *tm = (TableMgmt *) rel->mgmtData;
-    printf("Record Count:%d\n", tm->record_count);
-    printf("Page Count:%d\n", tm->page_count);
-    printf("Records Count Page:%d\n", tm->records_per_page);
-    printf("Reusable Head:%d\n", tm->reusable_head);
-    printf("Reusable Tail:%d\n", tm->reusable_tail);
+    Schema *sm = rel-> schema;
+    BM_BufferPool *bm = tm->bm;
 
-    Schema *s = rel->schema;
-    printf("Attributes:%d\n", s->numAttr);
+    char *tableData = malloc(sizeof(char)*1000);
+    if (!tableData) {
+        printf("ERROR: Memory allocation for table data failed");
+        exit(1);
+    }
+
+    sprintf(tableData, "%s|%d|%d|%d|%d|%d|", 
+            rel->name, 
+            tm->record_count, 
+            tm->page_count, 
+            (int)(PAGE_SIZE/sizeof(Schema)), 
+            tm->reusable_head,
+            tm->reusable_tail);
+    char *schemaData = schemaToString(sm);
+    
+    // Allocate sufficient memory to tableData and concatinate
+    tableData = realloc(tableData, sizeof(char)*
+                                (strlen(tableData) + strlen(schemaData)));
+    strcat(tableData, schemaData);
+   
+    BM_PageHandle *h = MAKE_PAGE_HANDLE(); 
+    pinPage(bm, h, 0);
+    h->data = tableData;
+    markDirty(bm, h);
+    unpinPage(bm, h);
+
+    forceFlushPool(bm);
+
+    if (shutdownBufferPool(bm) != RC_OK) {
+        printf("BUFFER ERROR: Could not shutdown buffer pool\n");
+    }
+    
     int i = 0;
-    for (i = 0; i < s->numAttr; i++) {
-        printf("%s %d %d\n", s->attrNames[i], s->dataTypes[i], s->typeLength[i]);
+    for (i = 0; i < sm->numAttr; i++) {
+        free(sm->attrNames[i]);
     }
+    free(sm->attrNames);
+    free(sm->dataTypes);
+    free(sm->typeLength);
+    free(sm->keyAttrs);
+    free(sm);
 
-    for (i = 0; i < s->keySize; i++) {
-        printf("(");
-        if (i != s->keySize-1) {
-            printf("%d,", s->keyAttrs[i]);
-        } else {
-            printf("%d)", s->keyAttrs[i]);
-        }
-    }
+    free(tm);
+    
+    free(rel->name);
+
+    free(rel);
+
+    return RC_OK;
 }
 
+RC deleteTable (char *name) {
+   destroyPageFile(name); 
+}
 /* Dealing with Schemas
  *
  *

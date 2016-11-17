@@ -69,5 +69,7 @@ RC deserializePageHeader(char *str, Page_Header *pageHeader);
 RID *deserializeTombstoneNode(char *str);
 List *deserializeTombstoneList(char *str);
 char *serializeTombstonList(List *l);
+RC primaryKeyCheck(RM_TableData *rel, Record *r);
+RC find(List *l, RID id);
 
 #endif // RECORD_MGR_H

@@ -69,9 +69,9 @@ char *testName;
 
 int main(int argc, char const *argv[]) {
 	testName = "";
-	// testCreateAndReloadTombstoneList();
+	testCreateAndReloadTombstoneList();
 	testInsertIntoTombstoneList();
-	// testPrimaryKeyCheck();
+	testPrimaryKeyCheck();
 	return 0;
 }
 
@@ -101,7 +101,6 @@ void testCreateAndReloadTombstoneList(void) {
 	Record *r;
 	RID *rids;
 	Schema *schema;
-	testName = "test creating a new table and insert,update,delete tuples";
 	schema = testSchema();
 	rids = (RID *) malloc(sizeof(RID) * numInserts);
 
@@ -215,11 +214,14 @@ void testInsertIntoTombstoneList(void) {
 	Record *r;
 	RID *rids;
 	Schema *schema;
-	testName = "test creating a new table and insert,update,delete tuples";
+	testName = "test deleting records and inserting new records into those deleted slots";
 	schema = testSchema();
 	rids = (RID *) malloc(sizeof(RID) * numInserts);
 
-	TEST_CHECK(initRecordManager(NULL));
+	Config *con = (Config *)malloc(sizeof(Config));
+	con->primaryKeyCheck = true;
+
+	TEST_CHECK(initRecordManager(con));
 	TEST_CHECK(createTable("test_table_d",schema));
 	TEST_CHECK(openTable(table, "test_table_d"));
 
@@ -239,6 +241,7 @@ void testInsertIntoTombstoneList(void) {
 
 	TEST_CHECK(closeTable(table));
 
+
 	TEST_CHECK(openTable(table, "test_table_d"));
 
 	for(i = 0; i <numNewInserts; i++)
@@ -252,8 +255,13 @@ void testInsertIntoTombstoneList(void) {
 		RID *rid = (RID *)malloc(sizeof(RID));
 		rid->page = 1;
 		rid->slot = i;
-		TEST_CHECK(getRecord(table, *rid, r));
-		ASSERT_EQUALS_RECORDS(fromTestRecord(schema, finalR[i]), r, schema, "compare records");
+		if (i == 6 || i == 9) {
+			ASSERT_EQUALS_INT(getRecord(table, *rid, r), RC_TUPLE_NOT_FOUND, "record has been deleted");
+		}
+		else {
+			TEST_CHECK(getRecord(table, *rid, r));
+			ASSERT_EQUALS_RECORDS(fromTestRecord(schema, finalR[i]), r, schema, "compare records");
+		}
 	}
 
   TEST_CHECK(closeTable(table))
@@ -266,6 +274,99 @@ void testInsertIntoTombstoneList(void) {
 	TEST_DONE();
 }
 
+void testPrimaryKeyCheck(void) {
+	{
+	  RM_TableData *table = (RM_TableData *) malloc(sizeof(RM_TableData));
+	  TestRecord inserts[] = {
+	    {1, "aaaa", 3},
+	    {2, "bbbb", 2},
+	    {3, "cccc", 1},
+	    {4, "dddd", 3},
+	    {5, "eeee", 5},
+	    {6, "ffff", 1},
+	    {7, "gggg", 3},
+	    {8, "hhhh", 3},
+	    {9, "iiii", 2}
+	  };
+	  int numInserts = 9, numInsertsTotal = 11, i;
+	  Record *r;
+	  RID *rids;
+	  Schema *schema;
+	  testName = "test inserting primary key duplicated records";
+	  schema = testSchema();
+	  rids = (RID *) malloc(sizeof(RID) * numInserts);
+
+    Config *con = (Config *)malloc(sizeof(Config));
+
+    con->primaryKeyCheck = true;
+
+	  TEST_CHECK(initRecordManager(con));
+	  TEST_CHECK(createTable("test_table_r",schema));
+	  TEST_CHECK(openTable(table, "test_table_r"));
+
+
+	  // insert rows into table
+	  for(i = 0; i < numInserts; i++)
+	    {
+	      r = fromTestRecord(schema, inserts[i]);
+	      TEST_CHECK(insertRecord(table,r));
+	      rids[i] = r->id;
+	    }
+
+	  TEST_CHECK(closeTable(table));
+
+	  TEST_CHECK(openTable(table, "test_table_r"));
+	  TestRecord dupRecord[] = {
+	    {2, "aaaa", 3},
+		};
+
+		r = fromTestRecord(schema, dupRecord[0]);
+		ASSERT_EQUALS_INT(insertRecord(table, r), RC_DUPLICATED_PRIMARYKEY, "duplicated record insertion is detected.");
+
+
+	  TestRecord newRecords[] = {
+	    {10, "aaaa", 3},
+	    {11, "aaaa", 3},
+		};
+
+		TestRecord finalR[] = {
+	    {1, "aaaa", 3},
+	    {2, "bbbb", 2},
+	    {3, "cccc", 1},
+	    {4, "dddd", 3},
+	    {5, "eeee", 5},
+	    {6, "ffff", 1},
+	    {7, "gggg", 3},
+	    {8, "hhhh", 3},
+	    {9, "iiii", 2},
+	    {10, "aaaa", 3},
+	    {11, "aaaa", 3},
+		}; // finalR doesn't include {2, "aaaa", 3} because of duplicated primary key check;
+
+		for (i = 0; i < 2; i++) {
+			r = fromTestRecord(schema, newRecords[i]);
+			TEST_CHECK(insertRecord(table, r));
+		}
+
+		for(i = 0; i <numInsertsTotal; i++) {
+			RID *rid = (RID *)malloc(sizeof(RID));
+			rid->page = 1;
+			rid->slot = i;
+			TEST_CHECK(getRecord(table, *rid, r));
+			ASSERT_EQUALS_RECORDS(fromTestRecord(schema, finalR[i]), r, schema, "compare records");
+		}
+
+	  TEST_CHECK(deleteTable("test_table_r"));
+	  TEST_CHECK(shutdownRecordManager());
+
+
+    free(con);
+	  free(rids);
+	  free(table);
+	  freeRecord(r);
+	  TEST_DONE();
+	}
+}
 
 Schema *
 testSchema (void)

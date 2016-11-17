@@ -18,9 +18,14 @@
 #include "rm_serializer.c"
 #include "list.h"
 
+
+Config *config;
+
 // table and manager
 RC initRecordManager (void *mgmtData) {
-
+	Config *c = (Config *)malloc(sizeof(Config));
+	c = (Config *)mgmtData;
+	config = c;
   return RC_OK;
 }
 RC shutdownRecordManager () {
@@ -55,7 +60,6 @@ RC createTable (char *name, Schema *schema) {
   SM_FileHandle fh;
 
   createPageFile(name);
-
   initBufferPool(bm, name, 5, RS_FIFO, NULL);
 
 	pinPage(bm, h, 0);
@@ -85,6 +89,12 @@ RC createTable (char *name, Schema *schema) {
 
   // here just create a table with a name.
 }
+/**
+ * open table and create table related structs.
+ * @param  rel  RM_TableData
+ * @param  name table name
+ * @return      RC_OK;
+ */
 RC openTable (RM_TableData *rel, char *name) {
   // Open a table via table name.
   rel->name = name;
@@ -129,8 +139,6 @@ RC closeTable (RM_TableData *rel) {
   readBlock(0, &fh, ph);
 
   char *list = serializeTombstonList(tableHeader->tombstone);
-
-  // printf("list: %s\n", list);
 
   memcpy(ph+100, list, strlen(list));
   writeBlock(0, &fh, ph);
@@ -178,14 +186,20 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	RID *rid = (RID  *)malloc(sizeof(RID));
 
 
-	// TODO check primiary key.
+	// check existance of duplicated primiary key.
+	if (config != NULL) {
+		if (config->primaryKeyCheck) {
+		  if (primaryKeyCheck(rel, record) == RC_DUPLICATED_PRIMARYKEY) {
+		    return RC_DUPLICATED_PRIMARYKEY;
+		  }
+		}
+	}
 
 	SM_FileHandle fh;
 	SM_PageHandle ph;
 	ph = (SM_PageHandle) malloc(PAGE_SIZE);
 	int i;
 	int insertIntoTombstone = 0;
-
 
 
 	if (tableHeader->tombstone->itemCount != 0 ) {
@@ -210,10 +224,6 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	Value *value;
   VarString *result;
   MAKE_VARSTRING(result);
-
-
-	// TODO select rid in tombstone list first instead of find the first
-	// empty slot.
 
 
 	for (i = 0; i < rel->schema->numAttr; i++) {
@@ -246,7 +256,7 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	memcpy(ph, updatedHeaderStr, strlen(updatedHeaderStr));
 	writeBlock(rid->page, &fh, ph);
 
-  // assing rid (current position) to record.
+  // assign rid (current position) to record.
 
   // move freePointer to next position, if it reaches the maximum record count,
   // a new page(with page header) is added to page file.
@@ -306,9 +316,7 @@ RC deleteRecord (RM_TableData *rel, RID id) {
 	tstone_id->slot = id.slot;
 	tableHeader->totalRecordCount--;
 	if (insert(tableHeader->tombstone, tstone_id) == 0 ) {
-		// TODO update header and tombstone.
-		// update relative page header.
-		//
+
 		// update tombstone stored in table file.
 		SM_FileHandle fh;
 		SM_PageHandle ph;
@@ -318,44 +326,73 @@ RC deleteRecord (RM_TableData *rel, RID id) {
 		char *tableHeaderStr = generateTableInfo(rel);
 		memcpy(ph, tableHeaderStr, strlen(tableHeaderStr));
 		writeBlock(0, &fh, ph);
+
+		// update page header by decrease recordCount by 1.
+		Page_Header *updatedHeader = (Page_Header *)malloc(sizeof(Page_Header));
+		char *header = (char *)malloc(sizeof(char) * 50);
+
+		readBlock(id.page, &fh, ph);
+		memcpy(header, ph, 50);
+		deserializePageHeader(header, updatedHeader);
+
+		updatedHeader->recordCount--;
+		char *updatedHeaderStr = generatePageHeader(rel, updatedHeader);
+		memcpy(ph, updatedHeaderStr, strlen(updatedHeaderStr));
+		writeBlock(id.page, &fh, ph);
+		closePageFile(&fh);
+
+		free(updatedHeader);
+		free(header);
+
 		return RC_OK;
 	}
 	return -1;
 }
+
+/**
+ * update a particular record.
+ * @param  rel    RM_TableData
+ * @param  record the new record.
+ * @return        RC_OK;
+ */
 RC updateRecord (RM_TableData *rel, Record *record) {
   // define a new r;
 	Record *r = (Record *)malloc(sizeof(Record));
 
-	getRecord(rel, record->id, r);
 
+	// get the record that needs to be updated.
+	getRecord(rel, record->id, r);
 	Value *value;
 	VarString *result;
 	MAKE_VARSTRING(result);
 
 	int i;
 
+	// update each column.
 	for (i = 0; i < rel->schema->numAttr; i++) {
 		getAttr(record, rel->schema, i, &value);
 		setAttr(r, rel->schema, i, value);
 		freeVal(value);
 	}
 
-
+	// serialize record.
 	for (i = 0; i < rel->schema->numAttr; i++) {
 		getAttr(r, rel->schema, i, &value);
 		APPEND(result, "%s&", serializeValue(value));
 		freeVal(value);
 	}
 
+	// write changes to table file.
 	SM_FileHandle fh;
 	SM_PageHandle ph;
 	ph = (SM_PageHandle) malloc(PAGE_SIZE);
-
 	openPageFile(rel->name, &fh);
 	int offset = 50 + (record->id.slot) * (schemaLength(rel->schema));
 	readBlock(record->id.page, &fh, ph);
 	strncpy(ph+offset, result->buf, schemaLength(rel->schema));
 	writeBlock(record->id.page, &fh, ph);
+
+	// close table file and free memory.
 	closePageFile(&fh);
 	free(ph);
 	FREE_VARSTRING(result);
@@ -363,18 +400,32 @@ RC updateRecord (RM_TableData *rel, Record *record) {
 
 	return RC_OK;
 }
+
+/**
+ * get a record using RID and assign it to 'record'.
+ * @param  rel    RM_TableData
+ * @param  id     id of the fetching record.
+ * @param  record variable used for store the fetched record.
+ * @return        RC_OK | RC_TUPLE_NOT_FOUND
+ */
 RC getRecord(RM_TableData *rel, RID id, Record *record) {
 
 	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+	// if the record is in the tombstone list, it means the record has been
+	// deleted. 'RC_TUPLE_NOT_FOUND' is returned.
+	RC f = find(tableHeader->tombstone, id);
+	if (f == RC_OK) {
+		return RC_TUPLE_NOT_FOUND;
+	}
 
 
+	// otherwise, fetch the record using id.
 	int offset = 50 + (id.slot) * (schemaLength(rel->schema));
 	SM_PageHandle p = (SM_PageHandle) malloc(PAGE_SIZE);
 
 	SM_FileHandle fh;
 	SM_PageHandle ph;
 	ph = (SM_PageHandle) malloc(PAGE_SIZE);
-
 	openPageFile(rel->name, &fh);
 	readBlock(id.page, &fh, ph);
 
@@ -401,7 +452,13 @@ RC getRecord(RM_TableData *rel, RID id, Record *record) {
 }
 
 
-// scans
+/**
+ * initialize a scan handle
+ * @param  rel  RM_TableData
+ * @param  scan RM_ScanHandle
+ * @param  cond scan condition(s)
+ * @return      RC_OK
+ */
 RC startScan (RM_TableData *rel, RM_ScanHandle *scan, Expr *cond) {
 	ScanInfo *scanInfo = (ScanInfo *)malloc(sizeof(ScanInfo));
 	scanInfo->cond = cond;
@@ -415,6 +472,13 @@ RC startScan (RM_TableData *rel, RM_ScanHandle *scan, Expr *cond) {
 
 	return RC_OK;
 }
+
+/**
+ * find the matching record by iteratively going through all records.
+ * @param  scan   RM_ScanHandle
+ * @param  record the goal record
+ * @return        RC_OK | RC_RM_NO_MORE_TUPLES
+ */
 RC next (RM_ScanHandle *scan, Record *record) {
 	ScanInfo *scanInfo = (ScanInfo *)scan->mgmtData;
 	RID currentRID = scanInfo->curRID;
@@ -468,7 +532,12 @@ RC closeScan (RM_ScanHandle *scan) {
 	return RC_OK;
 }
 
-// dealing with schemas
+// dealing with schema
+/**
+ * calculate the size of the schema.
+ * @param  schema Schema struct
+ * @return        INT
+ */
 int getRecordSize (Schema *schema) {
 	int schemaLength= 0;
 	int i;
@@ -483,6 +552,16 @@ int getRecordSize (Schema *schema) {
 	return schemaLength;
 }
 
+/**
+ * create a schema.
+ * @param  numAttr    number of attributes.
+ * @param  attrNames  an array of strings storing the names of eaah attributes.
+ * @param  dataTypes  data types of each attribute.
+ * @param  typeLength length of each attribute.
+ * @param  keySize    number of (primary)key parameter.
+ * @param  keys       primary key(s)
+ * @return            schema
+ */
 Schema *createSchema (int numAttr, char **attrNames, DataType *dataTypes, int *typeLength, int keySize, int *keys) {
 	Schema *schema = (Schema *)malloc(sizeof(Schema));
 
@@ -527,7 +606,6 @@ int schemaLength(Schema *schema) {
 RC createRecord (Record **record, Schema *schema) {
 	// Reference for why use double pointer here.
 	// http://stackoverflow.com/questions/5580761/why-use-double-pointer-or-why-use-pointers-to-pointers
-	// int recordLength = schemaLength(schema);
 	int recordLength = getRecordSize(schema);
 
 	*record = (Record *)malloc(sizeof(Record));
@@ -801,7 +879,6 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 	DataType dataTypes[numAttr];
 	int typeLength[numAttr];
 	int keyAttrs[numAttr];
-	// TODO primary key used for primary key check.
 	int keySize = 1;
 	int keys[] = {0};
 	i = 0;
@@ -956,7 +1033,7 @@ RID *deserializeTombstoneNode(char *str) {
 	char *new = (char *)malloc(sizeof(strlen(str)));
 	strcpy(new, str);
 	if (((r = (RID *)malloc(sizeof(RID))) == NULL)) {
-		printf("Creating tombstone node fails\n");
+		// printf("Creating tombstone node fails\n");
 		return NULL;
 	}
 	int page, slot;
@@ -985,10 +1062,9 @@ RID *deserializeTombstoneNode(char *str) {
 	return r;
 }
 
-//TODO update parameter.
 List *deserializeTombstoneList(char *str) {
 	if (strlen(str) == 0) {
-		printf("create new list \n");
+		// printf("create new list \n");
 		return createList();
 	}
 	// char s[] = "(3,2)&(4,7)&(9,3)&(3,5)&";
@@ -1027,4 +1103,56 @@ char *serializeTombstonList(List *l) {
 	}
 
 	RETURN_STRING(result);
+}
+
+RC primaryKeyCheck(RM_TableData *rel, Record *r) {
+  Record *foundRecord = (Record *)malloc(sizeof(Record));
+  Table_Header *tableheader = (Table_Header *)rel->mgmtData;
+  RC rc;
+  int found = 0;
+  Schema *schema = rel->schema;
+  RM_ScanHandle *sc = (RM_ScanHandle *) malloc(sizeof(RM_ScanHandle));
+  Expr *sel, *left, *right;
+  int i;
+  Value *value;
+
+  int keyAttr = schema->keyAttrs[0];
+  getAttr(r, schema, keyAttr, &value);
+
+  MAKE_CONS(left, value);
+  MAKE_ATTRREF(right, keyAttr);
+  MAKE_BINOP_EXPR(sel, left, right, OP_COMP_EQUAL);
+  startScan(rel, sc, sel);
+
+  while((rc = next(sc, foundRecord)) == RC_OK) {
+    found = 1;
+		break;
+  }
+	closeScan(sc);
+	if (found == 1) {
+		// printList(tableheader->tombstone);
+		int f = find(tableheader->tombstone, foundRecord->id);
+		free(foundRecord);
+		if (f == RC_NOT_FOUND_IN_TOMBSTONE)
+			return RC_DUPLICATED_PRIMARYKEY;
+	}
+  return RC_OK;
+}
+
+RC find(List *l, RID id) {
+  ListNode *node = l->head;
+  RID *rid;
+
+  if (l->itemCount == 0) {
+    return RC_NOT_FOUND_IN_TOMBSTONE;
+  }
+
+  while(node != NULL) {
+    rid = (RID *)node->value;
+    if (rid->page == id.page && rid->slot == id.slot) {
+      return RC_OK;
+    }
+    node = node->next;
+  }
+  return RC_NOT_FOUND_IN_TOMBSTONE;
 }

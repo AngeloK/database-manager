@@ -66,6 +66,7 @@ typedef struct Table_Header {
 	// int *offsets;
 	// int maxRecords;
 	List *tombstone;
+  bool keyCheck;
 } Table_Header;
 
 
@@ -79,6 +80,11 @@ typedef struct Page_Header {
 	// struct Page_Header *next;
 	// RID **mapping;
 } Page_Header;
+
+
+typedef struct Config {
+	bool primaryKeyCheck;
+} Config;
 
 #define MAKE_STRING_VALUE(result, value)				\
   do {									\

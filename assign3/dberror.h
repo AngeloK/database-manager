@@ -33,6 +33,10 @@ typedef int RC;
 #define RC_BUFFER_BUSY 401
 #define RC_CANNOT_SHUTDOWN 400
 
+#define RC_DUPLICATED_PRIMARYKEY 402
+#define RC_NOT_FOUND_IN_TOMBSTONE 403
+#define RC_TUPLE_NOT_FOUND 404
+
 /* holder for error messages */
 extern char *RC_message;
 

@@ -69,6 +69,7 @@ ListNode *popTail(List *l) {
 
 	else {
 		l->tail = node->prev;
+		l->tail->next = NULL;
 	}
 	l->itemCount--;
 	return node;
@@ -76,7 +77,7 @@ ListNode *popTail(List *l) {
 
 RC printList(List *l) {
 	if (l->itemCount == 0) {
-		printf("List is empty\n");
+		// printf("List is empty\n");
 		return -1;
 	}
 	ListNode *node = l->head;

@@ -614,6 +614,7 @@ RC createRecord (Record **record, Schema *schema) {
 
   return RC_OK;
 }
+
 RC freeRecord (Record *record) {
 	free(record);
 	return RC_OK;
@@ -624,52 +625,46 @@ RC getAttr (Record *record, Schema *schema, int attrNum, Value **value) {
 	int offset;
 	attrOffset(schema, attrNum, &offset);
 	char *valueFromRecord = record->data + offset;
-
-	switch (schema->dataTypes[attrNum]) {
-		case DT_INT:
-			(*value)->dt = DT_INT;
-			memcpy(&((*value)->v.intV), valueFromRecord, sizeof(int));
-			break;
-		case DT_STRING:
-			(*value)->dt = DT_STRING;
-			int stringLength = schema->typeLength[attrNum];
-			(*value)->v.stringV = (char *)malloc(sizeof(char) * stringLength + 1);
-			// // Allocate space.
-			strncpy((*value)->v.stringV, valueFromRecord, stringLength);
-			(*value)->v.stringV[stringLength] = '\0';
-			break;
-		case DT_BOOL:
-			(*value)->dt = DT_BOOL;
-			memcpy(&((*value)->v.boolV), valueFromRecord, sizeof(bool));
-			break;
-		case DT_FLOAT:
-			(*value)->dt = DT_FLOAT;
-			memcpy(&((*value)->v.floatV), valueFromRecord, sizeof(float));
-			break;
-	}
+    
+    if(schema->dataTypes[attrNum] == DT_INT){
+        (*value)->dt = DT_INT;
+        memcpy(&((*value)->v.intV), valueFromRecord, sizeof(int));
+    }
+    else if(schema->dataTypes[attrNum] == DT_BOOL){
+        (*value)->dt = DT_BOOL;
+        memcpy(&((*value)->v.intV), valueFromRecord, sizeof(bool));
+    }
+    else if(schema->dataTypes[attrNum] == DT_FLOAT){
+        (*value)->dt = DT_FLOAT;
+        memcpy(&((*value)->v.floatV), valueFromRecord, sizeof(float));
+    }
+    else if(schema->dataTypes[attrNum] == DT_STRING){
+        (*value)->dt = DT_STRING;
+        int stringLength = schema->typeLength[attrNum];
+        (*value)->v.stringV = (char *)malloc(sizeof(char) * stringLength + 1);
+        strncpy((*value)->v.stringV, valueFromRecord, stringLength);
+        (*value)->v.stringV[stringLength] = '\0';
+    }
 
   return RC_OK;
 }
 
 RC setAttr (Record *record, Schema *schema, int attrNum, Value *value){
-		int offset;
+    int offset;
     attrOffset(schema, attrNum, &offset);
-		char *result = record->data+offset;
-
-		switch (value->dt) {
-			case DT_INT:
-				memcpy(result, &(value->v.intV) ,sizeof(int));
-				break;
-			case DT_STRING:
-				memcpy(result, value->v.stringV, schema->typeLength[attrNum]);
-				break;
-			case DT_FLOAT:
-				memcpy(result, &(value->v.floatV) ,sizeof(float));
-				break;
-			case DT_BOOL:
-				memcpy(result, &(value->v.boolV) ,sizeof(bool));
-				break;
-		}
+    char *result = record->data+offset;
+    if(value->dt == DT_INT){
+        memcpy(result, &(value->v.intV) ,sizeof(int));
+    }
+    else if(value->dt == DT_BOOL){
+        memcpy(result, &(value->v.boolV) ,sizeof(bool));
+    }
+    else if(value->dt == DT_FLOAT){
+        memcpy(result, &(value->v.floatV) ,sizeof(float));
+    }
+    else if(value->dt == DT_STRING){
+        memcpy(result, value->v.stringV, schema->typeLength[attrNum]);
+    }
 		return RC_OK;
 }
 
@@ -982,7 +977,7 @@ Record *deserializeRecord(Schema *schema, char *recordString, RID id) {
 	char *token;
 	token = strtok(recordString, "&");
 	int i = 0;
-
+    int index = 0;
 	char **temp = malloc((schema->numAttr) * sizeof(char *));
 
 	while (token != NULL && i < schema->numAttr)
@@ -999,6 +994,8 @@ Record *deserializeRecord(Schema *schema, char *recordString, RID id) {
 	createRecord(&record, schema);
 
 	int offset;
+    
+    
 
 	for (i = 0; i < schema->numAttr; i++) {
 

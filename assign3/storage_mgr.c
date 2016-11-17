@@ -22,7 +22,7 @@ void initStorageManager (void) {
 
 	// Allocate space for the Page and File  handles.
 	fHandle = (SM_FileHandle *) malloc(sizeof(SM_FileHandle *));
-	memPage = (SM_PageHandle) malloc(sizeof(SM_PageHandle)); 
+	memPage = (SM_PageHandle) malloc(sizeof(SM_PageHandle));
 
 };
 /*
@@ -31,7 +31,7 @@ void initStorageManager (void) {
 **	Method Name :createPageFile
 **	Description: Create a new page file. The initial file size is one page. This method will fill this single page with '\0' bytes.
 **	Input Parameters : pointer to fileName of type character - char *fileName
-**	Return Value : RC_OK | RC_FILE_NOT_FOUND | RC_WRITE_FAILED 
+**	Return Value : RC_OK | RC_FILE_NOT_FOUND | RC_WRITE_FAILED
 **
 ******************************************************************************************************************
 */
@@ -83,30 +83,30 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 	int fd = open(fileName, flag);
 
 	// fcntl gets or changes the file status, the second parameter "F_GETFL"
-	// is used to get the flag, if the file is opened correctly, it returns a 
+	// is used to get the flag, if the file is opened correctly, it returns a
 	// non-negative integer.
 	if (fcntl(fd, F_GETFL) < 0) {
 		return RC_FILE_NOT_FOUND;
 	}
 
 	// assign current fd to page file handle.
-	fHandle->mgmtInfo = (void *)fd;
+	fHandle->mgmtInfo = fd;
 
 	// obtain file size via file descriptor.
 	off_t fsize;
 	fsize = lseek(fd, 0, SEEK_END);
 
-	printf("size is :%llu\n", fsize);
+	// printf("size is :%llu\n", fsize);
 
-	
-	// assign values to fileName, totalNumPages, and initialize current page 
+
+	// assign values to fileName, totalNumPages, and initialize current page
 	// position as 0.
 	fHandle->fileName = fileName;
 	fHandle->totalNumPages = fsize/PAGE_SIZE;
 	fHandle->curPagePos = 0;
 
 
-	printf("%d\n", fHandle->totalNumPages);
+	// printf("%d\n", fHandle->totalNumPages);
 
 	return RC_OK;
 }
@@ -116,20 +116,20 @@ RC openPageFile (char *fileName, SM_FileHandle *fHandle) {
 **      Method Name :closePageFile
 **      Description: Close a page file
 **      Input Parameters :An existing file handle
-**      Return Value : RC_OK | RC_FILE_NOT_FOUND 
+**      Return Value : RC_OK | RC_FILE_NOT_FOUND
 **
 ******************************************************************************************************************
 */
 RC closePageFile (SM_FileHandle *fHandle) {
 
 	// access file descriptor by page file handle.
-	int fd = fHandle->mgmtInfo;
+	int fd = (int)fHandle->mgmtInfo;
 
 	// close function returns 0 if the file descriptor is closed.
 	if (close(fd) == 0) {
 		return RC_OK;
 	}
-	// otherwise, return error code. 
+	// otherwise, return error code.
 	return RC_FILE_NOT_FOUND;
 };
 /*
@@ -138,7 +138,7 @@ RC closePageFile (SM_FileHandle *fHandle) {
 **      Method Name :destroyPageFile
 **      Description: Destroys an existing page file
 **      Input Parameters : filename
-**      Return Value : RC_OK | RC_FILE_NOT_FOUND 
+**      Return Value : RC_OK | RC_FILE_NOT_FOUND
 **
 ******************************************************************************************************************
 */
@@ -161,12 +161,13 @@ RC destroyPageFile (char *fileName) {
 ******************************************************************************************************************
 */
 RC readBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
+	int md = (int)fHandle->mgmtInfo;
 	// if pageNum is greater than total number of pages in the file, return error.
 	if (pageNum > (fHandle->totalNumPages)) {
 		return RC_READ_NON_EXISTING_PAGE;
-	}	
+	}
 
-	// define offset used for finding and manipulating the particular page. 
+	// define offset used for finding and manipulating the particular page.
 	off_t offset = pageNum * PAGE_SIZE;
 
 	// pread is used for reading PAGE_SIZE (here is 4096) bytes of data start
@@ -174,7 +175,7 @@ RC readBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
 	//
 	// detail of this function can be found here:
 	// http://pubs.opengroup.org/onlinepubs/009695399/functions/read.html
-	if (pread(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) > 0 ) {
+	if (pread(md, memPage, PAGE_SIZE, offset) > 0 ) {
 		return RC_OK;
 	}
 	else {
@@ -205,8 +206,9 @@ int getBlockPos (SM_FileHandle *fHandle) {
 *******************************************************************************************************************
 */
 RC readFirstBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
+	int md = (int)fHandle->mgmtInfo;
 
-	if (pread(fHandle->mgmtInfo, memPage, PAGE_SIZE, 0) > 0) {
+	if (pread(md, memPage, PAGE_SIZE, 0) > 0) {
 		return RC_OK;
 	}
 	else {
@@ -224,13 +226,14 @@ RC readFirstBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
 ******************************************************************************************************************
 */
 RC readPreviousBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
+	int md = (int)fHandle->mgmtInfo;
 	if (fHandle->curPagePos == 0) {
 		return RC_READ_NON_EXISTING_PAGE;
-	}	
-	
+	}
+
 	off_t offset = (fHandle->curPagePos - 1) * PAGE_SIZE;
 
-	if (pread(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) < 0) {
+	if (pread(md, memPage, PAGE_SIZE, offset) < 0) {
 		return RC_READ_NON_EXISTING_PAGE;
 	}
 
@@ -240,7 +243,7 @@ RC readPreviousBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
 ******************************************************************************************************************
 **
 **      Method Name : readCurrentBlock
-**      Description: The method reads the current block of page relative to the curPagePos of the file. 
+**      Description: The method reads the current block of page relative to the curPagePos of the file.
 **      Input Parameters : An existing file handle and a Page Handle
 **      Return Value : RC_OK | RC_READ_NON_EXISTING_PAGE
 **
@@ -248,110 +251,115 @@ RC readPreviousBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
 */
 RC readCurrentBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
 	off_t offset = fHandle->curPagePos * PAGE_SIZE;
-	if (pread(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) < 0) {
+	int md = (int)fHandle->mgmtInfo;
+	if (pread(md, memPage, PAGE_SIZE, offset) < 0) {
 		return RC_READ_NON_EXISTING_PAGE;
-	}	
+	}
 	return RC_OK;
 }
 /*
 ******************************************************************************************************************
 **
 **      Method Name : readNextBlock
-**      Description: The method reads the next block of page relative to the curPagePos of the file. 
+**      Description: The method reads the next block of page relative to the curPagePos of the file.
 **      Input Parameters : An existing file handle and a Page Handle
 **      Return Value : RC_OK | RC_READ_NON_EXISTING_PAGE
 **
 ******************************************************************************************************************
 */
 RC readNextBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
+	int md = (int)fHandle->mgmtInfo;
 	if (fHandle->curPagePos == fHandle->totalNumPages) {
 		return RC_READ_NON_EXISTING_PAGE;
-	}	
+	}
 	off_t offset = (fHandle->curPagePos + 1) * PAGE_SIZE;
 
-	if (pread(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) < 0) {
+	if (pread(md, memPage, PAGE_SIZE, offset) < 0) {
 		return RC_READ_NON_EXISTING_PAGE;
 	}
 	return RC_OK;
-		
+
 }
 /*
 ******************************************************************************************************************
 **
 **      Method Name : readLastBlock
-**      Description: The method reads the last block of page relative to the curPagePos of the file. 
+**      Description: The method reads the last block of page relative to the curPagePos of the file.
 **      Input Parameters : An existing file handle and a Page Handle
 **      Return Value : RC_OK | RC_READ_NON_EXISTING_PAGE
 **
 ******************************************************************************************************************
 */
 RC readLastBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
+	int md = (int)fHandle->mgmtInfo;
 	off_t offset = fHandle->totalNumPages * PAGE_SIZE;
-	if (pread(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) < 0) {
+	if (pread(md, memPage, PAGE_SIZE, offset) < 0) {
 		return RC_READ_NON_EXISTING_PAGE;
-	}	
+	}
 	return RC_OK;
 }
 /*
 ******************************************************************************************************************
 **
 **      Method Name : writeBlock
-**      Description: The method Writes a page to disk. 
+**      Description: The method Writes a page to disk.
 **      Input Parameters : An Integer "pageNum", An existing file handle and a Page handle
 **      Return Value : RC_OK | RC_READ_NON_EXISTING_PAGE | RC_WRITE_FAILED
 **
 ******************************************************************************************************************
 */
 RC writeBlock (int pageNum, SM_FileHandle *fHandle, SM_PageHandle memPage) {
+	int md = (int)fHandle->mgmtInfo;
 	if (pageNum > fHandle->totalNumPages) {
 		return RC_READ_NON_EXISTING_PAGE;
-	}	
+	}
 
 	off_t offset = pageNum * PAGE_SIZE;
 
-	if (pwrite(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) > 0 ) {
-		printf("write to block%s\n", memPage);
+	if (pwrite(md, memPage, PAGE_SIZE, offset) > 0 ) {
+		// printf("write to block [%s]\n", memPage);
 		return RC_OK;
 	}
 	return RC_WRITE_FAILED;
-	
+
 }
 /*
 ******************************************************************************************************************
 **
 **      Method Name : writeCurrentBlock
-**      Description: The method Write a page to disk.  
+**      Description: The method Write a page to disk.
 **      Input Parameters :  An existing file handle and a Page handle
 **      Return Value : RC_OK | RC_WRITE_FAILED
 **
 ******************************************************************************************************************
 */
 RC writeCurrentBlock (SM_FileHandle *fHandle, SM_PageHandle memPage) {
-	off_t offset = fHandle->curPagePos * PAGE_SIZE;
-	if (pwrite(fHandle->mgmtInfo, memPage, PAGE_SIZE, offset) < 0) {
+	int md = (int)fHandle->mgmtInfo;
+	off_t offset = (off_t)fHandle->curPagePos * PAGE_SIZE;
+	if (pwrite(md, memPage, PAGE_SIZE, offset) < 0) {
 		return RC_WRITE_FAILED;
-	}	
+	}
 	return RC_OK;
 }
 /*
 ******************************************************************************************************************
 **
 **      Method Name : appendEmptyBlock
-**      Description: Increase the number of pages in the file by one. The new last page is filled with zero bytes.  
+**      Description: Increase the number of pages in the file by one. The new last page is filled with zero bytes.
 **      Input Parameters :  An existing file handle
 **      Return Value : RC_OK | RC_WRITE_FAILED
 **
 ******************************************************************************************************************
 */
 RC appendEmptyBlock (SM_FileHandle *fHandle) {
-	
+	int md = (int)fHandle->mgmtInfo;
+
 	char data[PAGE_SIZE];
 	memset(data,'\0',sizeof(data));
-	
-	int fd = fHandle->mgmtInfo;
+
 	off_t offset = (fHandle->totalNumPages) * PAGE_SIZE;
 
-	if(pwrite(fd, memPage, PAGE_SIZE, offset) < 0) {
+	if(pwrite(md, memPage, PAGE_SIZE, offset) < 0) {
 		return RC_WRITE_FAILED;
 	}
 	else {
@@ -364,7 +372,7 @@ RC appendEmptyBlock (SM_FileHandle *fHandle) {
 ******************************************************************************************************************
 **
 **      Method Name : ensureCapacity
-**      Description: If the file has less than numberOfPages pages then the method increases the size to numberOfPages.  
+**      Description: If the file has less than numberOfPages pages then the method increases the size to numberOfPages.
 **      Input Parameters :  An Integer "totalNumPages" and An existing file handle
 **      Return Value : RC_OK
 **
@@ -375,7 +383,7 @@ RC ensureCapacity (int numberOfPages, SM_FileHandle *fHandle) {
 		int diff = numberOfPages - fHandle->totalNumPages;
 		int i;
 		for (i = 0; i < diff; ++i) {
-			appendEmptyBlock(fHandle);	
+			appendEmptyBlock(fHandle);
 		}
 		return RC_OK;
 	}

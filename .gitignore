@@ -41,4 +41,7 @@ fabfile.pyc
 .gdbinit
 test_assign.dSYM/
 testbuffer.bin
+
 .editorconfig
+
+recordManager

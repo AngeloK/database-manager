@@ -10,8 +10,6 @@
 #include "dberror.h"
 #include "test_helper.h"
 
-#define TOTAL_PAGES 1000 //Define Page Size to be 1000
-
 /* Initialize page file handle and page handle */
 SM_FileHandle *fHandle;
 SM_PageHandle memPage;

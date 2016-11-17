@@ -76,14 +76,14 @@ serializeTableInfo(RM_TableData *rel)
 {
   VarString *result;
   MAKE_VARSTRING(result);
-  
+
   APPEND(result, "TABLE <%s> with <%i> tuples:\n", rel->name, getNumTuples(rel));
   APPEND_STRING(result, serializeSchema(rel->schema));
-  
-  RETURN_STRING(result);  
+
+  RETURN_STRING(result);
 }
 
-char * 
+char *
 serializeTableContent(RM_TableData *rel)
 {
   int i;
@@ -96,8 +96,8 @@ serializeTableContent(RM_TableData *rel)
     APPEND(result, "%s%s", (i != 0) ? ", " : "", rel->schema->attrNames[i]);
 
   startScan(rel, sc, NULL);
-  
-  while(next(sc, r) != RC_RM_NO_MORE_TUPLES) 
+
+  while(next(sc, r) != RC_RM_NO_MORE_TUPLES)
     {
     APPEND_STRING(result,serializeRecord(r, rel->schema));
     APPEND_STRING(result,"\n");
@@ -108,7 +108,7 @@ serializeTableContent(RM_TableData *rel)
 }
 
 
-char * 
+char *
 serializeSchema(Schema *schema)
 {
   int i;
@@ -141,20 +141,20 @@ serializeSchema(Schema *schema)
   APPEND_STRING(result," with keys: (");
 
   for(i = 0; i < schema->keySize; i++)
-    APPEND(result, "%s%s", ((i != 0) ? ", ": ""), schema->attrNames[schema->keyAttrs[i]]); 
+    APPEND(result, "%s%s", ((i != 0) ? ", ": ""), schema->attrNames[schema->keyAttrs[i]]);
 
   APPEND_STRING(result,")\n");
 
   RETURN_STRING(result);
 }
 
-char * 
+char *
 serializeRecord(Record *record, Schema *schema)
 {
   VarString *result;
   MAKE_VARSTRING(result);
   int i;
-  
+
   APPEND(result, "[%i-%i] (", record->id.page, record->id.slot);
 
   for(i = 0; i < schema->numAttr; i++)
@@ -162,20 +162,20 @@ serializeRecord(Record *record, Schema *schema)
       APPEND_STRING(result, serializeAttr (record, schema, i));
       APPEND(result, "%s", (i == 0) ? "" : ",");
     }
-  
+
   APPEND_STRING(result, ")");
 
   RETURN_STRING(result);
 }
 
-char * 
+char *
 serializeAttr(Record *record, Schema *schema, int attrNum)
 {
   int offset;
   char *attrData;
   VarString *result;
   MAKE_VARSTRING(result);
-  
+
   attrOffset(schema, attrNum, &offset);
   attrData = record->data + offset;
 
@@ -195,7 +195,7 @@ serializeAttr(Record *record, Schema *schema, int attrNum)
 	buf = (char *) malloc(len + 1);
 	strncpy(buf, attrData, len);
 	buf[len] = '\0';
-	
+
 	APPEND(result, "%s:%s", schema->attrNames[attrNum], buf);
 	free(buf);
       }
@@ -226,7 +226,7 @@ serializeValue(Value *val)
 {
   VarString *result;
   MAKE_VARSTRING(result);
-  
+
   switch(val->dt)
     {
     case DT_INT:
@@ -250,7 +250,7 @@ Value *
 stringToValue(char *val)
 {
   Value *result = (Value *) malloc(sizeof(Value));
-  
+
   switch(val[0])
     {
     case 'i':
@@ -275,17 +275,17 @@ stringToValue(char *val)
       result->v.intV = -1;
       break;
     }
-  
+
   return result;
 }
 
 
-RC 
+RC
 attrOffset (Schema *schema, int attrNum, int *result)
 {
   int offset = 0;
   int attrPos = 0;
-  
+
   for(attrPos = 0; attrPos < attrNum; attrPos++)
     switch (schema->dataTypes[attrPos])
       {
@@ -302,7 +302,7 @@ attrOffset (Schema *schema, int attrNum, int *result)
 	offset += sizeof(bool);
 	break;
       }
-  
+
   *result = offset;
   return RC_OK;
 }

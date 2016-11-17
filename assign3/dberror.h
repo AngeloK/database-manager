@@ -5,6 +5,8 @@
 
 /* module wide constants */
 #define PAGE_SIZE 4096
+#define PAGE_FILE_CAP 1000
+#define TOTAL_PAGES 1000
 
 /* return code definitions */
 typedef int RC;
@@ -26,6 +28,14 @@ typedef int RC;
 #define RC_IM_KEY_ALREADY_EXISTS 301
 #define RC_IM_N_TO_LAGE 302
 #define RC_IM_NO_MORE_ENTRIES 303
+
+
+#define RC_BUFFER_BUSY 401
+#define RC_CANNOT_SHUTDOWN 400
+
+#define RC_DUPLICATED_PRIMARYKEY 402
+#define RC_NOT_FOUND_IN_TOMBSTONE 403
+#define RC_TUPLE_NOT_FOUND 404
 
 /* holder for error messages */
 extern char *RC_message;

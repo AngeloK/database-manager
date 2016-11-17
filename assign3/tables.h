@@ -2,6 +2,9 @@
 #define TABLES_H
 
 #include "dt.h"
+#include "buffer_mgr.h"
+// #include "expr.h"
+#include "list.h"
 
 // Data Types, Records, and Schemas
 typedef enum DataType {
@@ -32,7 +35,7 @@ typedef struct Record
   char *data;
 } Record;
 
-// information of a table schema: its attributes, datatypes, 
+// information of a table schema: its attributes, datatypes,
 typedef struct Schema
 {
   int numAttr;
@@ -50,6 +53,38 @@ typedef struct RM_TableData
   Schema *schema;
   void *mgmtData;
 } RM_TableData;
+
+
+typedef struct Table_Header {
+	int tableCapacity;
+	int pageCount;
+	char *lastAccessed;
+	int totalRecordCount;
+	int recordsPerPage;
+	RID *freePointer;
+	BM_BufferPool *bm;
+	// int *offsets;
+	// int maxRecords;
+	List *tombstone;
+  bool keyCheck;
+} Table_Header;
+
+
+typedef struct Page_Header {
+	int pageId;
+	bool isFull;    // true or false;
+	int freeSlot;  // -1 if the page is full.
+	int recordCount;
+	int recordCapacity;
+	// struct Page_Header *prev;
+	// struct Page_Header *next;
+	// RID **mapping;
+} Page_Header;
+
+
+typedef struct Config {
+	bool primaryKeyCheck;
+} Config;
 
 #define MAKE_STRING_VALUE(result, value)				\
   do {									\
@@ -87,5 +122,6 @@ extern char *serializeSchema(Schema *schema);
 extern char *serializeRecord(Record *record, Schema *schema);
 extern char *serializeAttr(Record *record, Schema *schema, int attrNum);
 extern char *serializeValue(Value *val);
+// extern static RC attrOffset (Schema *schema, int attrNum, int *result);
 
 #endif

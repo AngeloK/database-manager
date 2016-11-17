@@ -101,7 +101,10 @@ RC openTable (RM_TableData *rel, char *name) {
 	rel->schema = (Schema *)malloc(sizeof(Schema));
 	parseTableHeader(rel, ph);
 
+  List *l = deserializeTombstoneList(ph+100);
+
 	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
+  tableHeader->tombstone = l;
 	closePageFile(&fh);
 
 	return RC_OK;
@@ -116,20 +119,26 @@ RC openTable (RM_TableData *rel, char *name) {
 RC closeTable (RM_TableData *rel) {
 	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
 
-	ListNode *head = tableHeader->tombstone->head;
+  printList(tableHeader->tombstone);
 
-	RID *id;
+  SM_FileHandle fh;
+  SM_PageHandle ph;
+  ph = (SM_PageHandle) malloc(PAGE_SIZE);
 
-	while(head->next) {
-		id = (RID *)head->value;
-		printf("is page is %d\n", id->page);
-		printf("is slot is %d\n", id->slot);
-		printf("====");
-		head = head->next;
-	}
+  openPageFile(rel->name, &fh);
+  readBlock(0, &fh, ph);
+
+  char *list = serializeTombstonList(tableHeader->tombstone);
+
+  printf("list: %s\n", list);
+
+  memcpy(ph+100, list, strlen(list));
+  writeBlock(0, &fh, ph);
+  closePageFile(&fh);
 
   // close table and free memeory.
   freeSchema(rel->schema);
+  releaseList(tableHeader->tombstone);
   free(rel->mgmtData);
 
   return RC_OK;
@@ -175,11 +184,28 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	SM_PageHandle ph;
 	ph = (SM_PageHandle) malloc(PAGE_SIZE);
 	int i;
-	int offset = 50 + (freePointer->slot) * (schemaLength(rel->schema));
+	int insertIntoTombstone = 0;
+
+
+
+	if (tableHeader->tombstone->itemCount != 0 ) {
+		ListNode *node = popTail(tableHeader->tombstone);
+		RID *id = (RID *)node->value;
+		rid->page = id->page;
+		rid->slot = id->slot;
+		insertIntoTombstone = 1;
+	}
+
+	else {
+		rid->page = freePointer->page;
+		rid->slot = freePointer->slot;
+	}
+
+	int offset = 50 + (rid->slot) * (schemaLength(rel->schema));
 
   // serialize the record with separator defined as "&".
 	openPageFile(rel->name, &fh);
-	readBlock(freePointer->page, &fh, ph);
+	readBlock(rid->page, &fh, ph);
 	Value *value;
   VarString *result;
   MAKE_VARSTRING(result);
@@ -217,28 +243,28 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 	char *updatedHeaderStr = generatePageHeader(rel, updatedHeader);
 
 	memcpy(ph, updatedHeaderStr, strlen(updatedHeaderStr));
-	writeBlock(freePointer->page, &fh, ph);
+	writeBlock(rid->page, &fh, ph);
 
   // assing rid (current position) to record.
-	rid->page = freePointer->page;
-	rid->slot = freePointer->slot;
 
   // move freePointer to next position, if it reaches the maximum record count,
   // a new page(with page header) is added to page file.
-	freePointer->slot++;
-	if (freePointer->slot > tableHeader->recordsPerPage - 1) {
-		freePointer->slot = 0;
-		freePointer->page++;
-		Page_Header *pageHeader = (Page_Header *)malloc(sizeof(Page_Header));
+	if (!insertIntoTombstone) {
+		freePointer->slot++;
+		if (freePointer->slot > tableHeader->recordsPerPage - 1) {
+			freePointer->slot = 0;
+			freePointer->page++;
+			Page_Header *pageHeader = (Page_Header *)malloc(sizeof(Page_Header));
 
-		initPageHeader(rel, pageHeader, freePointer->page);
-		char *s;
-		s = generatePageHeader(rel, pageHeader);
-		ensureCapacity(freePointer->page, &fh);
-		writeBlock(freePointer->page, &fh, s);
-		free(pageHeader);
-		free(s);
+			initPageHeader(rel, pageHeader, freePointer->page);
+			char *s;
+			s = generatePageHeader(rel, pageHeader);
+			ensureCapacity(freePointer->page, &fh);
+			writeBlock(freePointer->page, &fh, s);
+			free(pageHeader);
+			free(s);
 
+		}
 	}
 
   // update table header.
@@ -277,11 +303,20 @@ RC deleteRecord (RM_TableData *rel, RID id) {
 	RID *tstone_id = (RID *)malloc(sizeof(RID));
 	tstone_id->page = id.page;
 	tstone_id->slot = id.slot;
+	tableHeader->totalRecordCount--;
 	if (insert(tableHeader->tombstone, tstone_id) == 0 ) {
 		// TODO update header and tombstone.
 		// update relative page header.
 		//
 		// update tombstone stored in table file.
+		SM_FileHandle fh;
+		SM_PageHandle ph;
+		ph = (SM_PageHandle) malloc(PAGE_SIZE);
+		openPageFile(rel->name, &fh);
+		readBlock(0, &fh, ph);
+		char *tableHeaderStr = generateTableInfo(rel);
+		memcpy(ph, tableHeaderStr, strlen(tableHeaderStr));
+		writeBlock(0, &fh, ph);
 		return RC_OK;
 	}
 	return -1;
@@ -824,7 +859,6 @@ RC parseTableHeader(RM_TableData *rel, char *stringHeader) {
 	tableHeader->lastAccessed = tableAttrs[7];
 
   // tableHeader->tombstone = createList();
-
 	tableHeader->freePointer = freePointer;
 
 	rel->mgmtData = tableHeader;
@@ -918,13 +952,13 @@ Record *deserializeRecord(Schema *schema, char *recordString, RID id) {
 
 RID *deserializeTombstoneNode(char *str) {
 	RID *r;
+	printf("str is %s\n", str);
 	char *new = (char *)malloc(sizeof(strlen(str)));
 	strcpy(new, str);
 	if (((r = (RID *)malloc(sizeof(RID))) == NULL)) {
 		printf("Creating tombstone node fails\n");
 		return NULL;
 	}
-	// // char s[] = "(3,2)";
 	int page, slot;
 	char *token;
 	//
@@ -951,19 +985,47 @@ RID *deserializeTombstoneNode(char *str) {
 	return r;
 }
 
+//TODO update parameter.
 List *deserializeTombstoneList(char *str) {
-	char s[] = "(3,2)&(4,7)&(9,3)&(3,5)&";
+	if (strlen(str) == 0) {
+		printf("create new list \n");
+		return createList();
+	}
+	printf("string is %s\n", str);
+	// char s[] = "(3,2)&(4,7)&(9,3)&(3,5)&";
   char *token;
-  token = strtok(s, "&");
+  token = strtok(str, "&");
 	List *l = createList();
 	RID *r;
   while(token != NULL) {
 		r = deserializeTombstoneNode(token);
-		insert(l, r);
+		if (r != NULL)
+			insert(l, r);
     token = strtok(NULL, "&");
   }
 	printList(l);
 
 	return l;
 
+}
+
+char *serializeTombstonList(List *l) {
+	VarString *result;
+	MAKE_VARSTRING(result);
+
+	ListNode *node = l->head;
+	RID *id;
+
+	while(node != NULL) {
+		id = (RID *)node->value;
+		APPEND_STRING(result, "(");
+		APPEND(result, "%d", id->page);
+		APPEND_STRING(result, ",");
+		APPEND(result, "%d", id->slot);
+		APPEND_STRING(result, ")");
+		APPEND_STRING(result, "&");
+		node = node->next;
+	}
+
+	RETURN_STRING(result);
 }

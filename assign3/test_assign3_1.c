@@ -79,14 +79,13 @@ main (void)
 {
   testName = "";
 
-  // testInsertManyRecords();
-  // testRecords();
-  // testCreateTableAndInsert();
-  // testUpdateTable();
-  // testScans();
-  // testScansTwo();
-  // testMultipleScans();
-	List *l = deserializeTombstoneList("abc");
+  testInsertManyRecords();
+  testRecords();
+  testCreateTableAndInsert();
+  testUpdateTable();
+  testScans();
+  testScansTwo();
+  testMultipleScans();
   return 0;
 }
 
@@ -322,6 +321,7 @@ testUpdateTable (void)
     }
 
   // delete rows from table
+	printf("from here\n");
   for(i = 0; i < numDeletes; i++)
     {
       TEST_CHECK(deleteRecord(table,rids[deletes[i]]));

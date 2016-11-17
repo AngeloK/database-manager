@@ -74,10 +74,10 @@ ListNode *popTail(List *l) {
 	return node;
 }
 
-void printList(List *l) {
+RC printList(List *l) {
 	if (l->itemCount == 0) {
 		printf("List is empty\n");
-		exit(0);
+		return -1;
 	}
 	ListNode *node = l->head;
 	RID *id;
@@ -88,8 +88,18 @@ void printList(List *l) {
 		node = node->next;
 	}
 	printf("### End ###\n");
+	return RC_OK;
 }
 
 RC releaseList(List *l) {
+	ListNode *current, *next;
+
+	current = l->head;
+
+	while (current != NULL) {
+		next = current->next;
+		free(current);
+		current = next;
+	}
 	return RC_OK;
 }

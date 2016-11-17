@@ -68,5 +68,6 @@ Record *deserializeRecord(Schema *schema, char *recordString, RID id);
 RC deserializePageHeader(char *str, Page_Header *pageHeader);
 RID *deserializeTombstoneNode(char *str);
 List *deserializeTombstoneList(char *str);
+char *serializeTombstonList(List *l);
 
 #endif // RECORD_MGR_H

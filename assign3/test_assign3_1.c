@@ -5,8 +5,6 @@
 #include "tables.h"
 #include "test_helper.h"
 
-#include "list.h"
-
 
 #define ASSERT_EQUALS_RECORDS(_l,_r, schema, message)			\
   do {									\
@@ -86,6 +84,7 @@ main (void)
   testScans();
   testScansTwo();
   testMultipleScans();
+
   return 0;
 }
 
@@ -173,7 +172,7 @@ testCreateTableAndInsert (void)
       int pos = rand() % numInserts;
       RID rid = rids[pos];
      TEST_CHECK(getRecord(table, rid, r));
-     //ASSERT_EQUALS_RECORDS(fromTestRecord(schema, inserts[pos]), r, schema, "compare records");
+     ASSERT_EQUALS_RECORDS(fromTestRecord(schema, inserts[pos]), r, schema, "compare records");
     }
 
   TEST_CHECK(closeTable(table));
@@ -321,7 +320,6 @@ testUpdateTable (void)
     }
 
   // delete rows from table
-	printf("from here\n");
   for(i = 0; i < numDeletes; i++)
     {
       TEST_CHECK(deleteRecord(table,rids[deletes[i]]));

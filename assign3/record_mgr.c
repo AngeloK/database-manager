@@ -119,7 +119,7 @@ RC openTable (RM_TableData *rel, char *name) {
 RC closeTable (RM_TableData *rel) {
 	Table_Header *tableHeader = (Table_Header *)rel->mgmtData;
 
-  printList(tableHeader->tombstone);
+  // printList(tableHeader->tombstone);
 
   SM_FileHandle fh;
   SM_PageHandle ph;
@@ -130,7 +130,7 @@ RC closeTable (RM_TableData *rel) {
 
   char *list = serializeTombstonList(tableHeader->tombstone);
 
-  printf("list: %s\n", list);
+  // printf("list: %s\n", list);
 
   memcpy(ph+100, list, strlen(list));
   writeBlock(0, &fh, ph);
@@ -193,6 +193,7 @@ RC insertRecord (RM_TableData *rel, Record *record) {
 		RID *id = (RID *)node->value;
 		rid->page = id->page;
 		rid->slot = id->slot;
+
 		insertIntoTombstone = 1;
 	}
 
@@ -952,7 +953,6 @@ Record *deserializeRecord(Schema *schema, char *recordString, RID id) {
 
 RID *deserializeTombstoneNode(char *str) {
 	RID *r;
-	printf("str is %s\n", str);
 	char *new = (char *)malloc(sizeof(strlen(str)));
 	strcpy(new, str);
 	if (((r = (RID *)malloc(sizeof(RID))) == NULL)) {
@@ -964,7 +964,7 @@ RID *deserializeTombstoneNode(char *str) {
 	//
 	token = strchr(new, '(');
 	if (!token) {
-		printf("parse tombstone string error\n");
+		// printf("parse tombstone string error\n");
 		return NULL;
 	}
 	*token = '\0';
@@ -991,7 +991,6 @@ List *deserializeTombstoneList(char *str) {
 		printf("create new list \n");
 		return createList();
 	}
-	printf("string is %s\n", str);
 	// char s[] = "(3,2)&(4,7)&(9,3)&(3,5)&";
   char *token;
   token = strtok(str, "&");
@@ -1003,7 +1002,7 @@ List *deserializeTombstoneList(char *str) {
 			insert(l, r);
     token = strtok(NULL, "&");
   }
-	printList(l);
+	// printList(l);
 
 	return l;
 

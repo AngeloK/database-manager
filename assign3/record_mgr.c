@@ -19,6 +19,7 @@
 #include "list.h"
 
 
+// Global configuration, used to set if using primaryKeyCheck.
 Config *config;
 
 // table and manager
@@ -587,6 +588,11 @@ RC freeSchema (Schema *schema) {
 }
 
 
+/**
+ * calculate the total lenght of serialized schema.
+ * @param  schema Schema pointer
+ * @return       	RC_OK
+ */
 int schemaLength(Schema *schema) {
 	int schemaLength= 0;
   int i;
@@ -625,7 +631,7 @@ RC getAttr (Record *record, Schema *schema, int attrNum, Value **value) {
 	int offset;
 	attrOffset(schema, attrNum, &offset);
 	char *valueFromRecord = record->data + offset;
-    
+
     if(schema->dataTypes[attrNum] == DT_INT){
         (*value)->dt = DT_INT;
         memcpy(&((*value)->v.intV), valueFromRecord, sizeof(int));
@@ -994,8 +1000,8 @@ Record *deserializeRecord(Schema *schema, char *recordString, RID id) {
 	createRecord(&record, schema);
 
 	int offset;
-    
-    
+
+
 
 	for (i = 0; i < schema->numAttr; i++) {
 
@@ -1064,7 +1070,9 @@ List *deserializeTombstoneList(char *str) {
 		// printf("create new list \n");
 		return createList();
 	}
-	// char s[] = "(3,2)&(4,7)&(9,3)&(3,5)&";
+
+	// e.g. char s[] = "(3,2)&(4,7)&(9,3)&(3,5)&";
+	// create a list (3,2)->(4,7)->(9,3)->(3,5)->NULL.
   char *token;
   token = strtok(str, "&");
 	List *l = createList();
@@ -1075,7 +1083,6 @@ List *deserializeTombstoneList(char *str) {
 			insert(l, r);
     token = strtok(NULL, "&");
   }
-	// printList(l);
 
 	return l;
 
@@ -1102,6 +1109,12 @@ char *serializeTombstonList(List *l) {
 	RETURN_STRING(result);
 }
 
+/**
+ * start a scan handle to check primary key attribute(s) through every record.
+ * @param  rel RM_TableDat
+ * @param  r   the record that is going to be inserted into record manager.
+ * @return     RC_OK | RC_DUPLICATED_PRIMARYKEY
+ */
 RC primaryKeyCheck(RM_TableData *rel, Record *r) {
   Record *foundRecord = (Record *)malloc(sizeof(Record));
   Table_Header *tableheader = (Table_Header *)rel->mgmtData;
@@ -1136,14 +1149,22 @@ RC primaryKeyCheck(RM_TableData *rel, Record *r) {
   return RC_OK;
 }
 
+/**
+ * find record in tombstone
+ * @param  l  tombstone list
+ * @param  id record id
+ * @return    RC_OK | RC_NOT_FOUND_IN_TOMBSTONE
+ */
 RC find(List *l, RID id) {
   ListNode *node = l->head;
   RID *rid;
 
+	// tombstone is empty.
   if (l->itemCount == 0) {
     return RC_NOT_FOUND_IN_TOMBSTONE;
   }
 
+	// loop through the list to find the matcing record id.
   while(node != NULL) {
     rid = (RID *)node->value;
     if (rid->page == id.page && rid->slot == id.slot) {
